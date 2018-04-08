@@ -1,0 +1,75 @@
+File Manifest for ICPSR 35478
+
+Smith, Tom W., Peter V. Marsden, and Michael Hout. General Social Survey,
+2012 Merged Data, Including a Cultural Module [United States]. ICPSR35478-
+v4. Ann Arbor, MI: Inter-university Consortium for Political and Social
+Research [distributor], 2016-05-26. http://doi.org/10.3886/ICPSR35478.v4
+
+Details on the version history can be found below the file listings.
+
+
+Study-level Documentation
+
+    Filename                            Record  Record    Var.    Date        MD5
+                                        Length  Count     Count   Updated     Checksum
+
+    35478-descriptioncitation.pdf       -       -         -       2016-05-26  -
+
+    35478-related_literature.txt        -       -         -       daily       -
+
+    35478-manifest.txt                  -       -         -       daily       -
+
+
+DS0001 General Social Survey, 2012 Merged Data, Including a Cultural Module
+[United States]
+
+    Filename                            Record  Record    Var.    Date        MD5
+                                        Length  Count     Count   Updated     Checksum
+
+    35478-0001-Codebook.pdf             -       -         -       2015-01-30  930356ab06fc446f70e9730e4cebdcff
+
+    35478-0001-Data.dta                 -       4,820     1069    2015-01-30  5134d62a8b9abbdd544ec5e865aa2a09
+
+    35478-0001-Data.rda                 -       4,820     1069    2015-01-30  7d0c0445200d1bb61968252a82dd928a
+
+    35478-0001-Data.sav                 -       4,820     1069    2015-01-30  6c3078dfeb99901f3831e15b8a0a8d38
+
+    35478-0001-Data.stc                 -       4,820     1069    2015-01-30  19caa8f7dcd5fcc8c23be85404ab4394
+
+    35478-0001-Data.tsv                 -       4,820     1069    2015-01-30  0b3ba4f5ac973d681987fa90ed4d702e
+
+    35478-0001-Data.txt                 1502    4,820     1069    2015-01-30  26edea26366615dae27c4158fca392e7
+
+    35478-0001-Data.xls                 -       4,820     1069    2014-12-11  ae6ab36f69200ab9595753881d936224
+
+    35478-0001-Data.xlsx                -       4,820     1069    2015-01-30  d7ff0066501982dcbd0d3fc359d7cc81
+
+    35478-0001-Documentation-Data_Lead-in.pdf -       -         -       2016-05-26  0c7a4d7a8c017b8e8c20b9698c4815bf
+
+    35478-0001-Documentation.pdf        -       -         -       2015-01-30  1e6125755dcd9a16da09a809cace8b1d
+
+    35478-0001-Questionnaire.pdf        -       -         -       2016-05-26  ce1db0813eb6f10ec26d9150c2dd50ff
+
+    35478-0001-Report-QuickFacts1.pdf   -       -         -       2016-05-26  e07f7d8982e7a2b13ea42c8737d143b5
+
+    35478-0001-Setup.dct                -       -         -       2016-05-26  bb24a5da9cac40db956892dc69e2133a
+
+    35478-0001-Setup.do                 -       -         -       2016-05-26  99bb2d15986c845f3ee7f966af5e57fd
+
+    35478-0001-Setup.sas                -       -         -       2016-05-26  f3f94e0c2eff3c8ef649d29bd9a0db5a
+
+    35478-0001-Setup.sps                -       -         -       2016-05-26  803edfad873023b75b2e70012c4bfde6
+
+    35478-0001-Supplemental_syntax.do   -       -         -       2016-05-26  f03b8d83115f00de97d8ae4684926440
+
+    35478-0001-Supplemental_syntax.sas  -       -         -       2016-05-26  079efa891aee8fb54d584563efd69eb9
+
+
+Version History
+
+2016-05-26 Data Lead-in documentation was added to highlight subjects and
+variables related to arts and culture.  2015-01-30 The study title has been
+updated and online analysis files were added for this data collection.
+2015-01-12 The Excel file has been updated for this data collection.  2015-
+01-05 A Quick Fact (infographic) has been added to the documentation for
+this data collection.

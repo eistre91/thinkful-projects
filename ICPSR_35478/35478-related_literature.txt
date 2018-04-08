@@ -1,0 +1,59 @@
+Bibliography
+General Social Survey, 2012 Merged Data, Including a Cultural Module
+[United States]
+
+This bibliography includes published and unpublished works that are related 
+to ICPSR study 35478. It includes works that are based on primary
+or secondary analysis of the data, or which describe or critique those
+data or the collection methodology. 
+
+If you publish a work or know of other works that are based on these data,
+please send the complete citation and name of the ICPSR study used to:
+icpsr-biblio-notify@umich.edu 
+
+
+1. Blume-Kohout, Margaret E.; Leonard, Sara R.; Novak-Leonard, Jennifer L.,
+"When the Going Gets Tough: Barriers and Motivations Affecting Arts
+Attendance." NEA Research Report #59. Washington, DC: National Endowment
+for the Arts, Office of Research & Analysis, Jan 2015.
+Full text PDF: http://arts.gov/sites/default/files/when-going-gets-tough-revised2.pdf
+This report examines demographic and socio-economic characteristics of
+adults who attended visual and performing arts activities in 2012, but
+unlike prior NEA research it offers in-depth perspectives on attitudes,
+motivations, and barriers concerning arts attendance. Based on a NEA module
+to the 2012 General Social Survey (GSS). 62 pp.
+
+2. Lizardo, Omar; Skiles, Sara, "Musical taste and patterns of symbolic
+exclusion in the United States 1993-2012: Generational dynamics of
+differentiation and continuity." Poetics. Dec 2015, 53, 9 - 21. DOI:
+10.1016/j.poetic.2015.08.003
+Full text PDF: http://arts.gov/sites/default/files/when-going-gets-tough-revised2.pdf
+This report examines demographic and socio-economic characteristics of
+adults who attended visual and performing arts activities in 2012, but
+unlike prior NEA research it offers in-depth perspectives on attitudes,
+motivations, and barriers concerning arts attendance. Based on a NEA module
+to the 2012 General Social Survey (GSS). 62 pp.
+
+3. Rubineau, Brian; Fernandez, Roberto M., "Tipping points: The gender
+segregating and desegregating effects of network recruitment." Organization
+Science. 2015, 26, (6), 1646 - 1664. DOI: 10.1287/orsc.2015.1015
+Full text PDF: http://arts.gov/sites/default/files/when-going-gets-tough-revised2.pdf
+This report examines demographic and socio-economic characteristics of
+adults who attended visual and performing arts activities in 2012, but
+unlike prior NEA research it offers in-depth perspectives on attitudes,
+motivations, and barriers concerning arts attendance. Based on a NEA module
+to the 2012 General Social Survey (GSS). 62 pp.
+
+4. Smith, David A., "Arts: Overcoming barriers to arts in today’s culture."
+WacoTrib.com. Jan 22, 2015, .
+Full text: http://www.wacotrib.com/entertainment/accesswaco/david_a_smith/arts-overcoming-barriers-to-arts-in-today-s-culture/article_f1247aba-fb93-5bef-bddb-7f24cc88b983.html
+
+5. Swan, Jennifer, "Decreasing arts attendance: What you may not know."
+Nonprofit Quarterly. Jan 19, 2015,.
+Full text: http://nonprofitquarterly.org/2015/01/19/decreasing-arts-attendance-what-you-may-not-know/
+
+6. Tsai, Ming-Chang, "Happiness and sociability in a nonrecursive model:
+The US and Taiwan compared." In Maggino, Filomena, A Life Devoted to
+Quality of Life. Social Indicators Research Series. 297 - 314, Springer
+International Publishing,2016. DOI: 10.1007/978-3-319-20568-7_16
+Full text: http://nonprofitquarterly.org/2015/01/19/decreasing-arts-attendance-what-you-may-not-know/
