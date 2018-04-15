@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 columns = ["GLOBALEVENTID","SQLDATE","MonthYear","Year","FractionDate","Actor1Code","Actor1Name","Actor1CountryCode","Actor1KnownGroupCode","Actor1EthnicCode","Actor1Religion1Code","Actor1Religion2Code","Actor1Type1Code","Actor1Type2Code","Actor1Type3Code","Actor2Code","Actor2Name","Actor2CountryCode","Actor2KnownGroupCode","Actor2EthnicCode","Actor2Religion1Code","Actor2Religion2Code","Actor2Type1Code","Actor2Type2Code","Actor2Type3Code","IsRootEvent","EventCode","EventBaseCode","EventRootCode","QuadClass","GoldsteinScale","NumMentions","NumSources","NumArticles","AvgTone","Actor1Geo_Type","Actor1Geo_FullName","Actor1Geo_CountryCode","Actor1Geo_ADM1Code","Actor1Geo_Lat","Actor1Geo_Long","Actor1Geo_FeatureID","Actor2Geo_Type","Actor2Geo_FullName","Actor2Geo_CountryCode","Actor2Geo_ADM1Code","Actor2Geo_Lat","Actor2Geo_Long","Actor2Geo_FeatureID","ActionGeo_Type","ActionGeo_FullName","ActionGeo_CountryCode","ActionGeo_ADM1Code","ActionGeo_Lat","ActionGeo_Long","ActionGeo_FeatureID","DATEADDED","SOURCEURL"]
 usecols = ['GLOBALEVENTID', 'SQLDATE', 'Actor1Code', 'Actor1Name', 'Actor1CountryCode', 'Actor1KnownGroupCode', 'Actor1EthnicCode', 'Actor1Religion1Code', 'Actor1Religion2Code', 'Actor1Type1Code', 'Actor1Type2Code', 'Actor1Type3Code', 'Actor2Code', 'Actor2Name', 'Actor2CountryCode', 'Actor2KnownGroupCode', 'Actor2EthnicCode', 'Actor2Religion1Code', 'Actor2Religion2Code', 'Actor2Type1Code', 'Actor2Type2Code', 'Actor2Type3Code', 'IsRootEvent', 'EventCode', 'EventBaseCode', 'EventRootCode', 'QuadClass', 'GoldsteinScale', 'NumMentions', 'NumSources', 'NumArticles', 'AvgTone', 'Actor1Geo_Type', 'Actor1Geo_FullName', 'Actor1Geo_CountryCode', 'Actor1Geo_ADM1Code', 'Actor1Geo_Lat', 'Actor1Geo_Long', 'Actor1Geo_FeatureID', 'Actor2Geo_Type', 'Actor2Geo_FullName', 'Actor2Geo_CountryCode', 'Actor2Geo_ADM1Code', 'Actor2Geo_Lat', 'Actor2Geo_Long', 'Actor2Geo_FeatureID', 'ActionGeo_Type', 'ActionGeo_FullName', 'ActionGeo_CountryCode', 'ActionGeo_ADM1Code', 'ActionGeo_Lat', 'ActionGeo_Long', 'ActionGeo_FeatureID']
@@ -386,5 +387,96 @@ state_dict = {
         'USWI': 'Wisconsin',
         'USWV': 'West Virginia',
         'USWY': 'Wyoming',
-	'USPR': 'Puerto Rico'
+        'USPR': 'Puerto Rico'
 }
+
+# Credit: https://www.dataquest.io/blog/pandas-big-data/ 
+def mem_usage(pandas_obj):
+    if isinstance(pandas_obj,pd.DataFrame):
+        usage_b = pandas_obj.memory_usage(deep=True).sum()
+    else: 
+        usage_b = pandas_obj.memory_usage(deep=True)
+    usage_mb = usage_b / 1024 ** 2 
+    return usage_mb, "{:03.2f} MB".format(usage_mb)
+
+def state_heat_map(data, vmin, vmax, title):
+    fig, ax = plt.subplots()
+
+    # Lambert Conformal map of lower 48 states.
+    m = Basemap(llcrnrlon=-119,llcrnrlat=20,urcrnrlon=-64,urcrnrlat=49,
+                projection='lcc',lat_1=33,lat_2=45,lon_0=-95)
+
+    # Mercator projection, for Alaska and Hawaii
+    m_ = Basemap(llcrnrlon=-190,llcrnrlat=20,urcrnrlon=-143,urcrnrlat=46,
+    projection='merc',lat_ts=20) # do not change these numbers
+
+    #%% ---------   draw state boundaries  ----------------------------------------
+    ## data from U.S Census Bureau
+    ## http://www.census.gov/geo/www/cob/st2000.html
+    shp_info = m.readshapefile('st99_d00','states',drawbounds=True,
+                               linewidth=0.45,color='gray')
+    shp_info_ = m_.readshapefile('st99_d00','states',drawbounds=False)
+
+    data_dict = data.to_dict()
+
+    #%% -------- choose a color for each state based on population density. -------
+    colors={}
+    statenames=[]
+    cmap = plt.cm.hot # use 'reversed hot' colormap
+    vmin = vmin; vmax = vmax # set range.
+    norm = Normalize(vmin=vmin, vmax=vmax)
+    for shapedict in m.states_info:
+        statename = shapedict['NAME']
+        # skip DC and Puerto Rico.
+        if statename not in ['District of Columbia','Puerto Rico']:
+            tone = data_dict[statename]
+            # calling colormap with value between 0 and 1 returns
+            # rgba value.  Invert color range (hot colors are high
+            # population), take sqrt root to spread out colors more.
+            colors[statename] = cmap(np.sqrt((tone-vmin)/(vmax-vmin)))[:3]
+        statenames.append(statename)
+
+    #%% ---------  cycle through state names, color each one.  --------------------
+    for nshape,seg in enumerate(m.states):
+        # skip DC and Puerto Rico.
+        if statenames[nshape] not in ['Puerto Rico', 'District of Columbia']:
+            color = rgb2hex(colors[statenames[nshape]])
+            poly = Polygon(seg,facecolor=color,edgecolor=color)
+        ax.add_patch(poly)
+
+    AREA_1 = 0.005  # exclude small Hawaiian islands that are smaller than AREA_1
+    AREA_2 = AREA_1 * 30.0  # exclude Alaskan islands that are smaller than AREA_2
+    AK_SCALE = 0.19  # scale down Alaska to show as a map inset
+    HI_OFFSET_X = -1900000  # X coordinate offset amount to move Hawaii "beneath" Texas
+    HI_OFFSET_Y = 250000    # similar to above: Y offset for Hawaii
+    AK_OFFSET_X = -250000   # X offset for Alaska (These four values are obtained
+    AK_OFFSET_Y = -750000 # via manual trial and error, thus changing them is not recommended.)
+
+    for nshape, shapedict in enumerate(m_.states_info):  # plot Alaska and Hawaii as map insets
+        if shapedict['NAME'] in ['Alaska', 'Hawaii']:
+            seg = m_.states[int(shapedict['SHAPENUM'] - 1)]
+            if shapedict['NAME'] == 'Hawaii' and float(shapedict['AREA']) > AREA_1:
+                seg = [(x + HI_OFFSET_X, y + HI_OFFSET_Y) for x, y in seg]
+                color = rgb2hex(colors[statenames[nshape]])
+            elif shapedict['NAME'] == 'Alaska' and float(shapedict['AREA']) > AREA_2:
+                seg = [(x*AK_SCALE + AK_OFFSET_X, y*AK_SCALE + AK_OFFSET_Y)\
+                       for x, y in seg]
+                color = rgb2hex(colors[statenames[nshape]])
+            poly = Polygon(seg, facecolor=color, edgecolor='gray', linewidth=.45)
+            ax.add_patch(poly)
+
+    ax.set_title(title)
+
+    #%% ---------  Plot bounding boxes for Alaska and Hawaii insets  --------------
+    light_gray = [0.8]*3  # define light gray color RGB
+    x1,y1 = m_([-190,-183,-180,-180,-175,-171,-171],[29,29,26,26,26,22,20])
+    x2,y2 = m_([-180,-180,-177],[26,23,20])  # these numbers are fine-tuned manually
+    m_.plot(x1,y1,color=light_gray,linewidth=0.8)  # do not change them drastically
+    m_.plot(x2,y2,color=light_gray,linewidth=0.8)
+
+    #%% ---------   Show color bar  ---------------------------------------
+    ax_c = fig.add_axes([0.9, 0.1, 0.03, 0.8])
+    cb = ColorbarBase(ax_c,cmap=cmap,norm=norm,orientation='vertical',
+                      label=r'[average positivity]')
+
+    plt.show()
