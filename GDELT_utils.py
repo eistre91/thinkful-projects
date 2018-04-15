@@ -386,5 +386,14 @@ state_dict = {
         'USWI': 'Wisconsin',
         'USWV': 'West Virginia',
         'USWY': 'Wyoming',
-	'USPR': 'Puerto Rico'
+        'USPR': 'Puerto Rico'
 }
+
+# Credit: https://www.dataquest.io/blog/pandas-big-data/ 
+def mem_usage(pandas_obj):
+    if isinstance(pandas_obj,pd.DataFrame):
+        usage_b = pandas_obj.memory_usage(deep=True).sum()
+    else: 
+        usage_b = pandas_obj.memory_usage(deep=True)
+    usage_mb = usage_b / 1024 ** 2 
+    return usage_mb, "{:03.2f} MB".format(usage_mb)
