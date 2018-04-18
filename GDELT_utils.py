@@ -1,8 +1,12 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from mpl_toolkits.basemap import Basemap as Basemap
+from matplotlib.colors import rgb2hex, Normalize
+from matplotlib.patches import Polygon
+from matplotlib.colorbar import ColorbarBase
 
-columns = ["GLOBALEVENTID","SQLDATE","MonthYear","Year","FractionDate","Actor1Code","Actor1Name","Actor1CountryCode","Actor1KnownGroupCode","Actor1EthnicCode","Actor1Religion1Code","Actor1Religion2Code","Actor1Type1Code","Actor1Type2Code","Actor1Type3Code","Actor2Code","Actor2Name","Actor2CountryCode","Actor2KnownGroupCode","Actor2EthnicCode","Actor2Religion1Code","Actor2Religion2Code","Actor2Type1Code","Actor2Type2Code","Actor2Type3Code","IsRootEvent","EventCode","EventBaseCode","EventRootCode","QuadClass","GoldsteinScale","NumMentions","NumSources","NumArticles","AvgTone","Actor1Geo_Type","Actor1Geo_FullName","Actor1Geo_CountryCode","Actor1Geo_ADM1Code","Actor1Geo_Lat","Actor1Geo_Long","Actor1Geo_FeatureID","Actor2Geo_Type","Actor2Geo_FullName","Actor2Geo_CountryCode","Actor2Geo_ADM1Code","Actor2Geo_Lat","Actor2Geo_Long","Actor2Geo_FeatureID","ActionGeo_Type","ActionGeo_FullName","ActionGeo_CountryCode","ActionGeo_ADM1Code","ActionGeo_Lat","ActionGeo_Long","ActionGeo_FeatureID","DATEADDED","SOURCEURL"]
+GDELT_columns = ["GLOBALEVENTID","SQLDATE","MonthYear","Year","FractionDate","Actor1Code","Actor1Name","Actor1CountryCode","Actor1KnownGroupCode","Actor1EthnicCode","Actor1Religion1Code","Actor1Religion2Code","Actor1Type1Code","Actor1Type2Code","Actor1Type3Code","Actor2Code","Actor2Name","Actor2CountryCode","Actor2KnownGroupCode","Actor2EthnicCode","Actor2Religion1Code","Actor2Religion2Code","Actor2Type1Code","Actor2Type2Code","Actor2Type3Code","IsRootEvent","EventCode","EventBaseCode","EventRootCode","QuadClass","GoldsteinScale","NumMentions","NumSources","NumArticles","AvgTone","Actor1Geo_Type","Actor1Geo_FullName","Actor1Geo_CountryCode","Actor1Geo_ADM1Code","Actor1Geo_Lat","Actor1Geo_Long","Actor1Geo_FeatureID","Actor2Geo_Type","Actor2Geo_FullName","Actor2Geo_CountryCode","Actor2Geo_ADM1Code","Actor2Geo_Lat","Actor2Geo_Long","Actor2Geo_FeatureID","ActionGeo_Type","ActionGeo_FullName","ActionGeo_CountryCode","ActionGeo_ADM1Code","ActionGeo_Lat","ActionGeo_Long","ActionGeo_FeatureID","DATEADDED","SOURCEURL"]
 usecols = ['GLOBALEVENTID', 'SQLDATE', 'Actor1Code', 'Actor1Name', 'Actor1CountryCode', 'Actor1KnownGroupCode', 'Actor1EthnicCode', 'Actor1Religion1Code', 'Actor1Religion2Code', 'Actor1Type1Code', 'Actor1Type2Code', 'Actor1Type3Code', 'Actor2Code', 'Actor2Name', 'Actor2CountryCode', 'Actor2KnownGroupCode', 'Actor2EthnicCode', 'Actor2Religion1Code', 'Actor2Religion2Code', 'Actor2Type1Code', 'Actor2Type2Code', 'Actor2Type3Code', 'IsRootEvent', 'EventCode', 'EventBaseCode', 'EventRootCode', 'QuadClass', 'GoldsteinScale', 'NumMentions', 'NumSources', 'NumArticles', 'AvgTone', 'Actor1Geo_Type', 'Actor1Geo_FullName', 'Actor1Geo_CountryCode', 'Actor1Geo_ADM1Code', 'Actor1Geo_Lat', 'Actor1Geo_Long', 'Actor1Geo_FeatureID', 'Actor2Geo_Type', 'Actor2Geo_FullName', 'Actor2Geo_CountryCode', 'Actor2Geo_ADM1Code', 'Actor2Geo_Lat', 'Actor2Geo_Long', 'Actor2Geo_FeatureID', 'ActionGeo_Type', 'ActionGeo_FullName', 'ActionGeo_CountryCode', 'ActionGeo_ADM1Code', 'ActionGeo_Lat', 'ActionGeo_Long', 'ActionGeo_FeatureID']
 dtype_dict = {'GLOBALEVENTID': 'uint32', 
               'Actor1Code': 'category', 'Actor1Name': 'str', 'Actor1CountryCode': 'category', 'Actor1KnownGroupCode': 'category', 'Actor1EthnicCode': 'category', 'Actor1Religion1Code': 'category', 'Actor1Religion2Code': 'category', 'Actor1Type1Code': 'category', 'Actor1Type2Code': 'category', 'Actor1Type3Code': 'category',
@@ -401,8 +405,8 @@ def mem_usage(pandas_obj):
     return usage_mb, "{:03.2f} MB".format(usage_mb)
 
 def state_heat_map(data, vmin, vmax, title):
-    fig, ax = plt.subplots()
-
+    fig, ax = plt.subplots(figsize=(14,7))
+        
     # Lambert Conformal map of lower 48 states.
     m = Basemap(llcrnrlon=-119,llcrnrlat=20,urcrnrlon=-64,urcrnrlat=49,
                 projection='lcc',lat_1=33,lat_2=45,lon_0=-95)
@@ -423,7 +427,7 @@ def state_heat_map(data, vmin, vmax, title):
     #%% -------- choose a color for each state based on population density. -------
     colors={}
     statenames=[]
-    cmap = plt.cm.hot # use 'reversed hot' colormap
+    cmap = plt.cm.afmhot # use 'reversed hot' colormap
     vmin = vmin; vmax = vmax # set range.
     norm = Normalize(vmin=vmin, vmax=vmax)
     for shapedict in m.states_info:
@@ -476,8 +480,8 @@ def state_heat_map(data, vmin, vmax, title):
     m_.plot(x2,y2,color=light_gray,linewidth=0.8)
 
     #%% ---------   Show color bar  ---------------------------------------
-    ax_c = fig.add_axes([0.9, 0.1, 0.03, 0.8])
+    ax_c = fig.add_axes([0.8, 0.1, 0.03, 0.8])
     cb = ColorbarBase(ax_c,cmap=cmap,norm=norm,orientation='vertical',
                       label=r'[average positivity]')
 
-    plt.show()
+    plt.show();
