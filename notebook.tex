@@ -291,6 +291,9 @@
         \PY{k+kn}{from} \PY{n+nn}{GDELT\PYZus{}utils} \PY{k}{import} \PY{n}{GDELT\PYZus{}columns}\PY{p}{,} \PY{n}{usecols}\PY{p}{,} \PY{n}{dtype\PYZus{}dict}\PY{p}{,} \PYZbs{}
                                 \PY{n}{cameo\PYZus{}dict}\PY{p}{,} \PY{n}{map\PYZus{}cameo\PYZus{}to\PYZus{}text}\PY{p}{,} \PYZbs{}
                                 \PY{n}{state\PYZus{}dict}\PY{p}{,} \PY{n}{mem\PYZus{}usage}\PY{p}{,} \PY{n}{state\PYZus{}heat\PYZus{}map}
+                
+        \PY{n}{data\PYZus{}2008} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{./200811.csv}\PY{l+s+s2}{\PYZdq{}}
+        \PY{n}{data\PYZus{}2016} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{./20161108.export.CSV}\PY{l+s+s2}{\PYZdq{}}
 \end{Verbatim}
 
 
@@ -300,247 +303,91 @@
 from the Global Data on Events, Location and Tone project, also known as
 GDELT. GDELT provides data on global events, storing such things as the
 type of the event, the actors involved, the location and the tone of
-news reporting on the event. It thus provides an abstract and data
-driven view of the world's affairs. It has been in operation since 2013,
-and has data available from January 1, 1979 to the present.
+documents that report on the event. It thus provides an abstract and
+data driven view of the world's affairs. It has been in operation since
+2013, and has data available from January 1, 1979 to the present.
 
 For our sample of the GDELT data, we're going to take a look at the data
 available for the USA's presidential election days in 2008 and 2016:
-November 4th, 2008 and November 8th, 2016. We're generally here to
-survey the data. To guide our exploration, we seek to determine whether
-the average tone of media coverage was significantly different between
-the two election days.
+November 4th, 2008 and November 8th, 2016. Of the data GDELT provides,
+we will focus our analysis on the AvgTone column, which aggregates the
+average tone of documents talking about the event which has been
+recorded in the data. As discussed in the GDELT documentation, this can
+give an overall tone of the narrative that has developed around an
+event.
+
+Most observers of USA politics can note significant differences between
+the 2008 and 2016 election years. Our goal is to determine whether the
+average tone of media coverage was significantly different between the
+two election days for those years. Thus, we may be able to express
+quantitatively what is widely felt, that the election of 2016 was of a
+different character all together than 2008. Given our limited
+perspective in this report, strong statistical conclusions are not
+drawn. However, a more indepth report could seek to build on this to
+determine exactly in what ways 2016 was different than 2008, and how it
+compares to past election years as well.
 
     \section{Data Preparation}\label{data-preparation}
 
-    We first load in row limited samples of our two datasets. Our first step
-is to quickly verify everything looks normal.
+    The overall GDELT dataset is very large, weighing in at a few TB. Even
+restricted to the two CSV files for the month of November in 2008 and
+November 8th in 2016, the data is quite large. We limit our scope to the
+2008 data for this section and briefly discuss ways of decreasing
+dataframe size and improving load performance; the curious reader will
+discover a more indepth explanation of the process in the appendix.
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}2}]:} \PY{n}{data\PYZus{}2008} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{./200811.csv}\PY{l+s+s2}{\PYZdq{}}
-        \PY{n}{data\PYZus{}2016} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{./20161108.export.CSV}\PY{l+s+s2}{\PYZdq{}}
-        
-        \PY{n}{df\PYZus{}2008\PYZus{}l} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{n}{data\PYZus{}2008}\PY{p}{,} \PY{n}{sep}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}t}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{nrows}\PY{o}{=}\PY{l+m+mi}{1000}\PY{p}{)}
-        \PY{n}{df\PYZus{}2016\PYZus{}l} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{n}{data\PYZus{}2016}\PY{p}{,} \PY{n}{sep}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}t}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{nrows}\PY{o}{=}\PY{l+m+mi}{1000}\PY{p}{)}
-        
-        \PY{n}{df\PYZus{}2016\PYZus{}l}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}2}]:} \PY{n}{df\PYZus{}2008\PYZus{}l} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{n}{data\PYZus{}2008}\PY{p}{,} \PY{n}{sep}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}t}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} 
+                                \PY{n}{names}\PY{o}{=}\PY{n}{GDELT\PYZus{}columns}\PY{p}{[}\PY{p}{:}\PY{l+m+mi}{57}\PY{p}{]}\PY{p}{,} \PY{n}{nrows}\PY{o}{=}\PY{l+m+mi}{1000}\PY{p}{)}
+        \PY{n}{df\PYZus{}2016\PYZus{}l} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{n}{data\PYZus{}2016}\PY{p}{,} \PY{n}{sep}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}t}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} 
+                                \PY{n}{names}\PY{o}{=}\PY{n}{GDELT\PYZus{}columns}\PY{p}{,} \PY{n}{nrows}\PY{o}{=}\PY{l+m+mi}{1000}\PY{p}{)}
 \end{Verbatim}
 
 
-\begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}2}]:}    596760615  20151109  201511  2015  2015.8466 Unnamed: 5    Unnamed: 6  \textbackslash{}
-        0  596760616  20151109  201511  2015  2015.8466        NaN           NaN   
-        1  596760617  20151109  201511  2015  2015.8466        AUT      AUSTRIAN   
-        2  596760618  20151109  201511  2015  2015.8466        AUT      AUSTRIAN   
-        3  596760619  20151109  201511  2015  2015.8466     AUTJUD      AUSTRIAN   
-        4  596760620  20151109  201511  2015  2015.8466  BWAELIGOV  FESTUS MOGAE   
-        
-          Unnamed: 7  Unnamed: 8 Unnamed: 9  \textbackslash{}
-        0        NaN         NaN        NaN   
-        1        AUT         NaN        NaN   
-        2        AUT         NaN        NaN   
-        3        AUT         NaN        NaN   
-        4        BWA         NaN        NaN   
-        
-                                                        {\ldots}                                                \textbackslash{}
-        0                                               {\ldots}                                                 
-        1                                               {\ldots}                                                 
-        2                                               {\ldots}                                                 
-        3                                               {\ldots}                                                 
-        4                                               {\ldots}                                                 
-        
-             967537  3.1 Times Square, New York, United States.1 US.1  USNY.1  \textbackslash{}
-        0   1662328    3  Los Angeles, California, United States   US    USCA   
-        1        AU    1                                 Austria   AU      AU   
-        2        IR    1                                 Austria   AU      AU   
-        3        AU    1                                 Austria   AU      AU   
-        4  -1397372    4          Gaborone, South East, Botswana   BC    BC09   
-        
-          40.757.1 -73.986.1  967537.1  20161108  \textbackslash{}
-        0  34.0522 -118.2440   1662328  20161108   
-        1  47.3333   13.3333        AU  20161108   
-        2  47.3333   13.3333        AU  20161108   
-        3  47.3333   13.3333        AU  20161108   
-        4 -24.6464   25.9119  -1397372  20161108   
-        
-          http://www.wsaw.com/content/news/Candidates-make-final-stops-on-Election-Day-eve-400321591.html  
-        0  http://www.rollingstone.com/culture/news/jinx-{\ldots}                                               
-        1  https://www.scmagazine.com/swiss-investigators{\ldots}                                               
-        2  https://www.scmagazine.com/swiss-investigators{\ldots}                                               
-        3  https://www.scmagazine.com/swiss-investigators{\ldots}                                               
-        4  http://www.albuquerqueexpress.com/index.php/si{\ldots}                                               
-        
-        [5 rows x 58 columns]
-\end{Verbatim}
-            
-    \subsection{Fixing Column Names}\label{fixing-column-names}
+    \subsubsection{Omitting Extraneous Data}\label{omitting-extraneous-data}
 
-    We already have a problem! The CSV's do not provide a header. With the
-documentation, we can determine that there are 58 columns for data after
-April 2013, and 57 before. With this, we can reload our dataframes
-properly.
+    The easiest and most obvious way to decrease the size of the loaded
+dataframes is to omit columns from the data that are not of interest to
+our analysis. The documentation notes that there are dates expressed
+differently in four different columns. Thus, we only load one.
+Additionally there are columns regarding the date the event was added to
+the record, DATEADDED, and a column regarding a source url, SOURCEURL.
+These are also omitted.
+
+    \subsubsection{Optimizing Data Types}\label{optimizing-data-types}
+
+    When loading in a dataframe with unspecified dtypes, Pandas makes safe
+but space inefficient choices for the data. This also means that Pandas
+would rather allocate more memory than necessary than try to squeeze the
+values into more limited data types. Thus we can improve upon memory
+consumption by downcasting columns data types which represent the same
+kind of values but which do not reserve quite so many bits. For example,
+for integer columns Pandas will assume a dtype of int64. We can usually
+downcast this column into one of the smaller integer types like int8,
+int16, and int32, which use far fewer bits.
+
+A more complicated transformation is that of turning an object column
+into a category column. This transformation is useful when the column
+has a lot of values that repeat. In this case, Pandas can use a trick to
+save on memory consumption by constructing a dictionary which has
+integer keys and the repeated values stored as dictionary values. Then
+the repeated values are covertly replaced by integers in the column. The
+original values of the column can then be recovered by following the
+accompanying dictionary pair.
+
+    \subsubsection{Result of Data
+Preparation}\label{result-of-data-preparation}
+
+    For comparison, we present below the memory consumption of a dataframe
+containing the first 1000 rows of the 2008 csv before and after our data
+preparation.
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}3}]:} \PY{n}{df\PYZus{}2008\PYZus{}l} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{n}{data\PYZus{}2008}\PY{p}{,} \PY{n}{sep}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}t}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{names}\PY{o}{=}\PY{n}{GDELT\PYZus{}columns}\PY{p}{[}\PY{p}{:}\PY{l+m+mi}{57}\PY{p}{]}\PY{p}{,} \PY{n}{nrows}\PY{o}{=}\PY{l+m+mi}{1000}\PY{p}{)}
-        \PY{n}{df\PYZus{}2016\PYZus{}l} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{n}{data\PYZus{}2016}\PY{p}{,} \PY{n}{sep}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}t}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{names}\PY{o}{=}\PY{n}{GDELT\PYZus{}columns}\PY{p}{,} \PY{n}{nrows}\PY{o}{=}\PY{l+m+mi}{1000}\PY{p}{)}
-\end{Verbatim}
-
-
-    \subsection{Improving Memory Consumption and
-Performance}\label{improving-memory-consumption-and-performance}
-
-    By default, Pandas makes safe but space inefficient choices for data
-types by always defaulting to int64/float64/object. We can improve
-memory use and load performance when making a dataframe out of the full
-CSV's by omitting any extra data that we are not interested in for our
-current analysis and, more importantly, by determining optimized data
-types for each column.
-
-For the former case, we note by looking at the
-\href{http://data.gdeltproject.org/documentation/GDELT-Data_Format_Codebook.pdf}{Data
-Format Codebook} that there are multiple columns which encode dates in
-different ways. There are also DATEADDED and SOURCEURL fields,
-describing the date the record was added to the data set and the source
-of the news respectively, which will not have any bearing on our
-analysis. Thus we omit these columns.
-
-Next we look into appropriate data types for our columns. For this
-analysis we follow the lead of
-\href{https://www.dataquest.io/blog/pandas-big-data/}{Using pandas with
-large data}. We first filter our dataframes for particular classes of
-types: integers/floats/objects. For the purposes of this report, we only
-follow the work on a single dataframe but the analysis has been applied
-to both.
-
-    \subsection{Optimizing Number Columns}\label{optimizing-number-columns}
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}4}]:} \PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}int} \PY{o}{=} \PY{n}{df\PYZus{}2008\PYZus{}l}\PY{o}{.}\PY{n}{select\PYZus{}dtypes}\PY{p}{(}\PY{n}{include}\PY{o}{=}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{int64}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}
-        \PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}int}\PY{o}{.}\PY{n}{columns}
-\end{Verbatim}
-
-
-\begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}4}]:} Index(['GLOBALEVENTID', 'SQLDATE', 'MonthYear', 'Year', 'IsRootEvent',
-               'EventCode', 'EventBaseCode', 'EventRootCode', 'QuadClass',
-               'NumMentions', 'NumSources', 'NumArticles', 'Actor1Geo\_Lat',
-               'Actor1Geo\_Long', 'Actor1Geo\_FeatureID', 'Actor2Geo\_Type',
-               'Actor2Geo\_FeatureID', 'DATEADDED'],
-              dtype='object')
-\end{Verbatim}
-            
-    We can then attempt to apply "downcasting" to these integer columns.
-That is, we can use a method of Pandas, to\_numeric, to find the
-smallest size integer type which will support all values of the columns.
-The available types are int8, int16, int32 and int64, as well as
-unsigned variants (only positive numbers) uint8, uint16, uint32 and
-uint64. The numbers at the end of each type indicate the number of bits
-consumed in order to represent the data type, and thus smaller numbers
-correspond with less memory consumption.
-
-The data's documentation also reaveals that all of these columns will
-have positive values. (We also find that some of these fields are not
-best represented as integers for the purposes of analysis, more on this
-below.) We now apply the downcasting into unsigned integer data types
-and show a comparison of memory usage.
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}5}]:} \PY{n}{converted\PYZus{}int} \PY{o}{=} \PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}int}\PY{o}{.}\PY{n}{apply}\PY{p}{(}\PY{n}{pd}\PY{o}{.}\PY{n}{to\PYZus{}numeric}\PY{p}{,}\PY{n}{downcast}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{unsigned}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-        
-        \PY{n}{num\PYZus{}before}\PY{p}{,} \PY{n}{str\PYZus{}before} \PY{o}{=} \PY{n}{mem\PYZus{}usage}\PY{p}{(}\PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}int}\PY{p}{)}
-        \PY{n}{num\PYZus{}after}\PY{p}{,} \PY{n}{str\PYZus{}after} \PY{o}{=} \PY{n}{mem\PYZus{}usage}\PY{p}{(}\PY{n}{converted\PYZus{}int}\PY{p}{)}
-        
-        \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Before downcast: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{str\PYZus{}before}\PY{p}{)}
-        \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{After downcast: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{str\PYZus{}after}\PY{p}{)}
-        \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Percent Decrease}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{num\PYZus{}after} \PY{o}{/} \PY{n}{num\PYZus{}before}\PY{p}{)}
-\end{Verbatim}
-
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-Before downcast:  0.14 MB
-After downcast:  0.04 MB
-Percent Decrease 0.7287617990005553
-
-    \end{Verbatim}
-
-    We see a 72\% decrease in memory usage in this example. A similar
-process to the one we just applied to int columns can be used for float
-columns.
-
-    \subsection{Optimizing Object Columns}\label{optimizing-object-columns}
-
-    Optimizing object columns is more involved. Generally an object column
-is made up of string values. In some cases, there is nothing we can do
-to minimize memory consumption. This generally applies when there are
-many unique string values in a column. However, if there are sufficient
-repeats, we can use a different numpy data type known as a category.
-
-This data type leverages a map-like structure to translate repeated
-strings into less memory intensive integers, and then covertly replaces
-the repeated values with these integers. The original values are then
-recoverable in this case by following the mapping. This can result in
-huge increases in memory efficiency. For a first pass, we apply a
-methodology present in our source for this memory optimization which
-replaces an object column with category if less than 50\% of the values
-are unique.
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}6}]:} \PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}obj} \PY{o}{=} \PY{n}{df\PYZus{}2008\PYZus{}l}\PY{o}{.}\PY{n}{select\PYZus{}dtypes}\PY{p}{(}\PY{n}{include}\PY{o}{=}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{object}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}
-        \PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}obj}\PY{o}{.}\PY{n}{columns}
-\end{Verbatim}
-
-
-\begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}6}]:} Index(['Actor2Code', 'Actor2Name', 'Actor2CountryCode', 'Actor2KnownGroupCode',
-               'Actor2Religion1Code', 'Actor2Religion2Code', 'Actor2Type1Code',
-               'Actor2Type2Code', 'Actor2Type3Code', 'Actor2Geo\_FullName',
-               'Actor2Geo\_CountryCode', 'Actor2Geo\_ADM1Code', 'ActionGeo\_FullName',
-               'ActionGeo\_CountryCode', 'ActionGeo\_ADM1Code'],
-              dtype='object')
-\end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}7}]:} \PY{n}{converted\PYZus{}obj} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{DataFrame}\PY{p}{(}\PY{p}{)}
-        
-        \PY{c+c1}{\PYZsh{} Credit to https://www.dataquest.io/blog/pandas\PYZhy{}big\PYZhy{}data/}
-        \PY{k}{for} \PY{n}{col} \PY{o+ow}{in} \PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}obj}\PY{o}{.}\PY{n}{columns}\PY{p}{:}
-            \PY{n}{num\PYZus{}unique\PYZus{}values} \PY{o}{=} \PY{n+nb}{len}\PY{p}{(}\PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}obj}\PY{p}{[}\PY{n}{col}\PY{p}{]}\PY{o}{.}\PY{n}{unique}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-            \PY{n}{num\PYZus{}total\PYZus{}values} \PY{o}{=} \PY{n+nb}{len}\PY{p}{(}\PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}obj}\PY{p}{[}\PY{n}{col}\PY{p}{]}\PY{p}{)}
-            \PY{k}{if} \PY{n}{num\PYZus{}unique\PYZus{}values} \PY{o}{/} \PY{n}{num\PYZus{}total\PYZus{}values} \PY{o}{\PYZlt{}} \PY{l+m+mf}{0.5}\PY{p}{:}
-                \PY{n}{converted\PYZus{}obj}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{col}\PY{p}{]} \PY{o}{=} \PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}obj}\PY{p}{[}\PY{n}{col}\PY{p}{]}\PY{o}{.}\PY{n}{astype}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{category}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-            \PY{k}{else}\PY{p}{:}
-                \PY{n}{converted\PYZus{}obj}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{col}\PY{p}{]} \PY{o}{=} \PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}obj}\PY{p}{[}\PY{n}{col}\PY{p}{]}
-                
-        \PY{n}{num\PYZus{}before}\PY{p}{,} \PY{n}{str\PYZus{}before} \PY{o}{=} \PY{n}{mem\PYZus{}usage}\PY{p}{(}\PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}obj}\PY{p}{)}
-        \PY{n}{num\PYZus{}after}\PY{p}{,} \PY{n}{str\PYZus{}after} \PY{o}{=} \PY{n}{mem\PYZus{}usage}\PY{p}{(}\PY{n}{converted\PYZus{}obj}\PY{p}{)}
-        
-        \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Before downcast: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{str\PYZus{}before}\PY{p}{)}
-        \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{After downcast: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{str\PYZus{}after}\PY{p}{)}
-        \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Percent Decrease}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{num\PYZus{}after} \PY{o}{/} \PY{n}{num\PYZus{}before}\PY{p}{)}
-\end{Verbatim}
-
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-Before downcast:  0.74 MB
-After downcast:  0.24 MB
-Percent Decrease 0.675466344710465
-
-    \end{Verbatim}
-
-    \subsection{Test Final Optimized
-Dataframe}\label{test-final-optimized-dataframe}
-
-    We now collate the information revealed by these naive data type passes
-as well as our knowledge of the documentation to arrive at our final
-data types for the columns we wish to investigate.
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}8}]:} \PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}opti} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{n}{data\PYZus{}2008}\PY{p}{,} \PY{n}{sep}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}t}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{names}\PY{o}{=}\PY{n}{GDELT\PYZus{}columns}\PY{p}{[}\PY{p}{:}\PY{l+m+mi}{57}\PY{p}{]}\PY{p}{,} \PYZbs{}
-                                \PY{n}{usecols}\PY{o}{=}\PY{n}{usecols}\PY{p}{,} \PY{n}{dtype}\PY{o}{=}\PY{n}{dtype\PYZus{}dict}\PY{p}{,} \PYZbs{}
-                                \PY{n}{parse\PYZus{}dates}\PY{o}{=}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SQLDATE}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{,} \PY{n}{nrows}\PY{o}{=}\PY{l+m+mi}{1000}\PY{p}{)}
-        \PY{n}{df\PYZus{}2016\PYZus{}l\PYZus{}opti} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{n}{data\PYZus{}2016}\PY{p}{,} \PY{n}{sep}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}t}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{names}\PY{o}{=}\PY{n}{GDELT\PYZus{}columns}\PY{p}{,} \PYZbs{}
-                                \PY{n}{usecols}\PY{o}{=}\PY{n}{usecols}\PY{p}{,} \PY{n}{dtype}\PY{o}{=}\PY{n}{dtype\PYZus{}dict}\PY{p}{,} \PYZbs{}
-                                \PY{n}{parse\PYZus{}dates}\PY{o}{=}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SQLDATE}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{,} \PY{n}{nrows}\PY{o}{=}\PY{l+m+mi}{1000}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}3}]:} \PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}opti} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{n}{data\PYZus{}2008}\PY{p}{,} \PY{n}{sep}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}t}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} 
+                                     \PY{n}{names}\PY{o}{=}\PY{n}{GDELT\PYZus{}columns}\PY{p}{[}\PY{p}{:}\PY{l+m+mi}{57}\PY{p}{]}\PY{p}{,} 
+                                     \PY{n}{usecols}\PY{o}{=}\PY{n}{usecols}\PY{p}{,} 
+                                     \PY{n}{dtype}\PY{o}{=}\PY{n}{dtype\PYZus{}dict}\PY{p}{,} 
+                                     \PY{n}{parse\PYZus{}dates}\PY{o}{=}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SQLDATE}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{,} \PY{n}{nrows}\PY{o}{=}\PY{l+m+mi}{1000}\PY{p}{)}
         
         \PY{n}{num\PYZus{}before}\PY{p}{,} \PY{n}{str\PYZus{}before} \PY{o}{=} \PY{n}{mem\PYZus{}usage}\PY{p}{(}\PY{n}{df\PYZus{}2008\PYZus{}l}\PY{p}{)}
         \PY{n}{num\PYZus{}after}\PY{p}{,} \PY{n}{str\PYZus{}after} \PY{o}{=} \PY{n}{mem\PYZus{}usage}\PY{p}{(}\PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}opti}\PY{p}{)}
@@ -558,128 +405,124 @@ Percent Decrease 0.36238106842168205
 
     \end{Verbatim}
 
-    In the end, with optimized data type choices that also take into
-consideration the type of analysis we wish to perform, we have a 36\%
-reduction in memory usage for our limited samples. And note we can
-expect the memory savings to be even greater for the full data frames
-assuming we chose our category columns correctly!
+    We thus see a respectable 36\% decrease in memory consumption from
+applying these techniques!
 
     \section{Data Exploration}\label{data-exploration}
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}9}]:} \PY{n}{df\PYZus{}2008} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{n}{data\PYZus{}2008}\PY{p}{,} \PY{n}{sep}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}t}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{names}\PY{o}{=}\PY{n}{GDELT\PYZus{}columns}\PY{p}{[}\PY{p}{:}\PY{l+m+mi}{57}\PY{p}{]}\PY{p}{,} \PYZbs{}
-                                \PY{n}{usecols}\PY{o}{=}\PY{n}{usecols}\PY{p}{,} \PY{n}{dtype}\PY{o}{=}\PY{n}{dtype\PYZus{}dict}\PY{p}{,} \PYZbs{}
+{\color{incolor}In [{\color{incolor}4}]:} \PY{n}{df\PYZus{}2008} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{n}{data\PYZus{}2008}\PY{p}{,} \PY{n}{sep}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}t}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{names}\PY{o}{=}\PY{n}{GDELT\PYZus{}columns}\PY{p}{[}\PY{p}{:}\PY{l+m+mi}{57}\PY{p}{]}\PY{p}{,} 
+                                \PY{n}{usecols}\PY{o}{=}\PY{n}{usecols}\PY{p}{,} \PY{n}{dtype}\PY{o}{=}\PY{n}{dtype\PYZus{}dict}\PY{p}{,} 
                                 \PY{n}{parse\PYZus{}dates}\PY{o}{=}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SQLDATE}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}
-        \PY{n}{df\PYZus{}2016} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{n}{data\PYZus{}2016}\PY{p}{,} \PY{n}{sep}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}t}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{names}\PY{o}{=}\PY{n}{GDELT\PYZus{}columns}\PY{p}{,} \PYZbs{}
-                                \PY{n}{usecols}\PY{o}{=}\PY{n}{usecols}\PY{p}{,} \PY{n}{dtype}\PY{o}{=}\PY{n}{dtype\PYZus{}dict}\PY{p}{,} \PYZbs{}
+        \PY{n}{df\PYZus{}2016} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{n}{data\PYZus{}2016}\PY{p}{,} \PY{n}{sep}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}t}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{names}\PY{o}{=}\PY{n}{GDELT\PYZus{}columns}\PY{p}{,} 
+                                \PY{n}{usecols}\PY{o}{=}\PY{n}{usecols}\PY{p}{,} \PY{n}{dtype}\PY{o}{=}\PY{n}{dtype\PYZus{}dict}\PY{p}{,} 
                                 \PY{n}{parse\PYZus{}dates}\PY{o}{=}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SQLDATE}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}
 \end{Verbatim}
 
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}10}]:} \PY{n+nb}{print}\PY{p}{(}\PY{n}{mem\PYZus{}usage}\PY{p}{(}\PY{n}{df\PYZus{}2008}\PY{p}{)}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}
-         \PY{n+nb}{print}\PY{p}{(}\PY{n}{mem\PYZus{}usage}\PY{p}{(}\PY{n}{df\PYZus{}2016}\PY{p}{)}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}
-\end{Verbatim}
+    We now set out on our goal of understanding possible differences in
+average tone between our two election days of interest. As we're we want
+to look at the tone in the US, it makes sense that our first task is to
+filter our dataframes for events that took place in the US. We can use
+the column ActionGeo\_CountryCode to determine the location of an event.
 
+    \subsubsection{Country Code}\label{country-code}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-730.73 MB
-142.42 MB
-
-    \end{Verbatim}
-
-    We know that we want to filter rows in these two dataframes to include
-only events about the United States as well as for the news on the
-correct election date. In the former case, we'll use the column
-"ActionGeo\_CountryCode" to determine where the action is reported as
-having taken place.
-
-    \subsection{Country Code}\label{country-code}
+    We first look at the values available in the column to make sure there
+is nothing unexpected, then we filter for US events.
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}11}]:} \PY{n}{df\PYZus{}2008}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}CountryCode}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{unique}\PY{p}{(}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}5}]:} \PY{n}{df\PYZus{}2008}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}CountryCode}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{unique}\PY{p}{(}\PY{p}{)}
 \end{Verbatim}
 
 
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}11}]:} [AF, US, CA, ID, UK, {\ldots}, FK, NT, AV, NF, VC]
-         Length: 241
-         Categories (240, object): [AF, US, CA, ID, {\ldots}, NT, AV, NF, VC]
+{\color{outcolor}Out[{\color{outcolor}5}]:} [AF, US, CA, ID, UK, {\ldots}, FK, NT, AV, NF, VC]
+        Length: 241
+        Categories (240, object): [AF, US, CA, ID, {\ldots}, NT, AV, NF, VC]
 \end{Verbatim}
             
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}12}]:} \PY{n}{df\PYZus{}2008\PYZus{}us} \PY{o}{=} \PY{n}{df\PYZus{}2008}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{n}{df\PYZus{}2008}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}CountryCode}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{==} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{US}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{o}{.}\PY{n}{copy}\PY{p}{(}\PY{p}{)}
-         \PY{n}{df\PYZus{}2016\PYZus{}us} \PY{o}{=} \PY{n}{df\PYZus{}2016}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{n}{df\PYZus{}2016}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}CountryCode}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{==} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{US}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{o}{.}\PY{n}{copy}\PY{p}{(}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}6}]:} \PY{n}{df\PYZus{}2008\PYZus{}us} \PY{o}{=} \PY{n}{df\PYZus{}2008}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{n}{df\PYZus{}2008}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}CountryCode}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{==} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{US}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{o}{.}\PY{n}{copy}\PY{p}{(}\PY{p}{)}
+        \PY{n}{df\PYZus{}2016\PYZus{}us} \PY{o}{=} \PY{n}{df\PYZus{}2016}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{n}{df\PYZus{}2016}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}CountryCode}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{==} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{US}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{o}{.}\PY{n}{copy}\PY{p}{(}\PY{p}{)}
 \end{Verbatim}
 
 
-    \subsection{Exploring Event Dates}\label{exploring-event-dates}
+    \subsubsection{Exploring Event Dates}\label{exploring-event-dates}
 
-    As for the dates, we'll first look at what data is present in our
-SQLDATE columns for each dataframe.
+    Next, we want to make sure that the events we're looking at took place
+on the correct date. This task is slightly different for the 2008 and
+2016 CSV's due to differences in how GDELT backfilled data for 2008.
+(The GDELT project was started in 2013.) Whereas our 2016 CSV is meant
+to be only for November 8th, 2016, the 2008 CSV we're using covers all
+of November. We'll look at what dates are present in our SQLDATE columns
+for each dataframe.
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}13}]:} \PY{n}{ax} \PY{o}{=} \PY{n}{df\PYZus{}2008\PYZus{}us}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SQLDATE}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{astype}\PY{p}{(}\PY{n+nb}{str}\PY{p}{)}\PY{o}{.}\PY{n}{value\PYZus{}counts}\PY{p}{(}\PY{p}{)} \PYZbs{}
-                              \PY{o}{.}\PY{n}{sort\PYZus{}index}\PY{p}{(}\PY{n}{ascending}\PY{o}{=}\PY{k+kc}{False}\PY{p}{)} \PYZbs{}
-                              \PY{o}{.}\PY{n}{plot}\PY{o}{.}\PY{n}{barh}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{10}\PY{p}{,}\PY{l+m+mi}{10}\PY{p}{)}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{lightblue}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}\PY{p}{;}
-                 
-         \PY{n}{ax}\PY{o}{.}\PY{n}{annotate}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{election day}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{xy}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{13500}\PY{p}{,} \PY{l+m+mi}{26}\PY{p}{)}\PY{p}{,} \PY{n}{xytext}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{15000}\PY{p}{,} \PY{l+m+mi}{22}\PY{p}{)}\PY{p}{,} \PY{n}{size}\PY{o}{=}\PY{l+m+mi}{15}\PY{p}{,}
-                     \PY{n}{arrowprops}\PY{o}{=}\PY{n+nb}{dict}\PY{p}{(}\PY{n}{facecolor}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{black}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{shrink}\PY{o}{=}\PY{l+m+mf}{0.05}\PY{p}{)}\PY{p}{)}
-         \PY{c+c1}{\PYZsh{} TODO Annotations to point at 11\PYZhy{}04.}
-         \PY{c+c1}{\PYZsh{} https://matplotlib.org/users/annotations.html}
-\end{Verbatim}
-
-
-\begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}13}]:} Text(15000,22,'election day')
-\end{Verbatim}
-            
-    \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_33_1.png}
-    \end{center}
-    { \hspace*{\fill} \\}
-    
-    Thus we see a significant uptick in news on and around election day
-which matches what we would expect. We also do not see any unexpected
-dates in this 2008 dataframe. Now we look at the 2016 dataframe. The
-2016 dataframe was loaded from a CSV labeled for the exact day we are
-interested in, November 8th, 2016, so this is really just a sanity check
-on the data.
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}14}]:} \PY{n}{df\PYZus{}2016\PYZus{}us}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SQLDATE}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{astype}\PY{p}{(}\PY{n+nb}{str}\PY{p}{)}\PY{o}{.}\PY{n}{value\PYZus{}counts}\PY{p}{(}\PY{p}{)} \PYZbs{}
-                              \PY{o}{.}\PY{n}{sort\PYZus{}index}\PY{p}{(}\PY{n}{ascending}\PY{o}{=}\PY{k+kc}{False}\PY{p}{)} \PYZbs{}
-                              \PY{o}{.}\PY{n}{plot}\PY{o}{.}\PY{n}{barh}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{10}\PY{p}{,}\PY{l+m+mi}{10}\PY{p}{)}\PY{p}{)}\PY{p}{;}
+{\color{incolor}In [{\color{incolor}7}]:} \PY{n}{ax} \PY{o}{=} \PY{n}{df\PYZus{}2008\PYZus{}us}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SQLDATE}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{astype}\PY{p}{(}\PY{n+nb}{str}\PY{p}{)}\PY{o}{.}\PY{n}{value\PYZus{}counts}\PY{p}{(}\PY{p}{)} \PYZbs{}
+                             \PY{o}{.}\PY{n}{sort\PYZus{}index}\PY{p}{(}\PY{n}{ascending}\PY{o}{=}\PY{k+kc}{False}\PY{p}{)} \PYZbs{}
+                             \PY{o}{.}\PY{n}{plot}\PY{o}{.}\PY{n}{barh}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{10}\PY{p}{,}\PY{l+m+mi}{10}\PY{p}{)}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{lightblue}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}\PY{p}{;}
+                
+        \PY{n}{ax}\PY{o}{.}\PY{n}{annotate}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{election day}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{xy}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{13500}\PY{p}{,} \PY{l+m+mi}{26}\PY{p}{)}\PY{p}{,} \PY{n}{xytext}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{15000}\PY{p}{,} \PY{l+m+mi}{22}\PY{p}{)}\PY{p}{,} 
+                    \PY{n}{size}\PY{o}{=}\PY{l+m+mi}{15}\PY{p}{,} \PY{n}{arrowprops}\PY{o}{=}\PY{n+nb}{dict}\PY{p}{(}\PY{n}{facecolor}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{black}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{shrink}\PY{o}{=}\PY{l+m+mf}{0.05}\PY{p}{)}\PY{p}{)}\PY{p}{;}
+        
+        \PY{n}{plt}\PY{o}{.}\PY{n}{ylabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Date}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+        \PY{n}{plt}\PY{o}{.}\PY{n}{xlabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Count}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+        \PY{n}{plt}\PY{o}{.}\PY{n}{title}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Counts of Date Values in 2008 Dataframe}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}\PY{p}{;}
 \end{Verbatim}
 
 
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_35_0.png}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_23_0.png}
     \end{center}
     { \hspace*{\fill} \\}
     
-    And it's a good thing we did it! There are other dates floating around
-in the dataset which appear to be anomalous. There's at least one 2006
-date where appears to be a typo, as well as a 2015 date thrown in this
-dataset. This indicates we should be sure to filter our 2016 dataset for
-date as well.
+    There is a significant uptick in news on and around election day which
+matches what we would expect. We also do not see any unexpected dates in
+this 2008 dataframe.
+
+Now we look at the 2016 dataframe.
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}15}]:} \PY{n}{election\PYZus{}day\PYZus{}2008} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{datetime64}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{2008\PYZhy{}11\PYZhy{}04}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-         \PY{n}{df\PYZus{}2008\PYZus{}usel} \PY{o}{=} \PY{n}{df\PYZus{}2008\PYZus{}us}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{n}{df\PYZus{}2008\PYZus{}us}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SQLDATE}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{==} \PY{n}{election\PYZus{}day\PYZus{}2008}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{o}{.}\PY{n}{copy}\PY{p}{(}\PY{p}{)}
-         \PY{n}{election\PYZus{}day\PYZus{}2016} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{datetime64}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{2016\PYZhy{}11\PYZhy{}08}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-         \PY{n}{df\PYZus{}2016\PYZus{}usel} \PY{o}{=} \PY{n}{df\PYZus{}2016\PYZus{}us}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{n}{df\PYZus{}2016\PYZus{}us}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SQLDATE}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{==} \PY{n}{election\PYZus{}day\PYZus{}2016}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{o}{.}\PY{n}{copy}\PY{p}{(}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}8}]:} \PY{n}{df\PYZus{}2016\PYZus{}us}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SQLDATE}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{astype}\PY{p}{(}\PY{n+nb}{str}\PY{p}{)}\PY{o}{.}\PY{n}{value\PYZus{}counts}\PY{p}{(}\PY{p}{)} \PYZbs{}
+                             \PY{o}{.}\PY{n}{sort\PYZus{}index}\PY{p}{(}\PY{n}{ascending}\PY{o}{=}\PY{k+kc}{False}\PY{p}{)} \PYZbs{}
+                             \PY{o}{.}\PY{n}{plot}\PY{o}{.}\PY{n}{barh}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{10}\PY{p}{,}\PY{l+m+mi}{10}\PY{p}{)}\PY{p}{)}\PY{p}{;}
+        
+        \PY{n}{plt}\PY{o}{.}\PY{n}{ylabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Date}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+        \PY{n}{plt}\PY{o}{.}\PY{n}{xlabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Count}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}        
+        \PY{n}{plt}\PY{o}{.}\PY{n}{title}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Counts of Date Values in 2016 Dataframe}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}\PY{p}{;}
 \end{Verbatim}
 
 
-    \subsection{AvgTone}\label{avgtone}
-
-    With our data prepared, we can now start looking at the column of
-interest we set out to explore, AvgTone. First, let's get an idea of the
-range of values for our dataframes.
+    \begin{center}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_25_0.png}
+    \end{center}
+    { \hspace*{\fill} \\}
+    
+    And we note that there are anomalous dates present in the 2016
+CSV.There's at least one 2006 date where appears to be a typo, as well
+as a 2015 date thrown in this dataset. This indicates we should be sure
+to filter our 2016 dataset for date as well.
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}16}]:} \PY{n}{fig}\PY{p}{,} \PY{n}{axs} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{subplots}\PY{p}{(}\PY{n}{nrows}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{ncols}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{,} \PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{15}\PY{p}{,}\PY{l+m+mi}{7}\PY{p}{)}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}9}]:} \PY{n}{election\PYZus{}day\PYZus{}2008} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{datetime64}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{2008\PYZhy{}11\PYZhy{}04}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+        \PY{n}{df\PYZus{}2008\PYZus{}usel} \PY{o}{=} \PY{n}{df\PYZus{}2008\PYZus{}us}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{n}{df\PYZus{}2008\PYZus{}us}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SQLDATE}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{==} \PY{n}{election\PYZus{}day\PYZus{}2008}\PY{p}{,}\PY{p}{:}\PY{p}{]} \PYZbs{}
+                                 \PY{o}{.}\PY{n}{copy}\PY{p}{(}\PY{p}{)}
+            
+        \PY{n}{election\PYZus{}day\PYZus{}2016} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{datetime64}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{2016\PYZhy{}11\PYZhy{}08}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+        \PY{n}{df\PYZus{}2016\PYZus{}usel} \PY{o}{=} \PY{n}{df\PYZus{}2016\PYZus{}us}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{n}{df\PYZus{}2016\PYZus{}us}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SQLDATE}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{==} \PY{n}{election\PYZus{}day\PYZus{}2016}\PY{p}{,}\PY{p}{:}\PY{p}{]} \PYZbs{}
+                                 \PY{o}{.}\PY{n}{copy}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+
+
+    \subsubsection{AvgTone}\label{avgtone}
+
+    We can now start looking at the column of interest we set out to
+explore, AvgTone. First, let's get an idea of the range of values for
+our dataframes and see if any difference jumps out at us.
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}10}]:} \PY{n}{fig}\PY{p}{,} \PY{n}{axs} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{subplots}\PY{p}{(}\PY{n}{nrows}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{ncols}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{,} \PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{15}\PY{p}{,}\PY{l+m+mi}{7}\PY{p}{)}\PY{p}{)}
          \PY{n}{fig}\PY{o}{.}\PY{n}{tight\PYZus{}layout}\PY{p}{(}\PY{n}{pad}\PY{o}{=}\PY{l+m+mi}{5}\PY{p}{)}
          
          \PY{n}{plt}\PY{o}{.}\PY{n}{subplot}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mi}{2}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}
@@ -697,15 +540,16 @@ range of values for our dataframes.
 
 
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_40_0.png}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_30_0.png}
     \end{center}
     { \hspace*{\fill} \\}
     
     We notice right away that the tone of news stories coming out in 2008
 was substantially higher and with far fewer variance than what was being
-seen in 2016.
+seen in 2016. This already provides some evidence for what we set out to
+explore.
 
-    \subsection{AvgTone by State}\label{avgtone-by-state}
+    \subsubsection{AvgTone by State}\label{avgtone-by-state}
 
     We can break this down further and attempt to understand the tone of
 news stories reporting on actions in particular states. To do this,
@@ -714,12 +558,12 @@ ActionGeo\_ADM1Code column which codes more specified location
 information.
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}17}]:} \PY{n}{df\PYZus{}2008\PYZus{}usel}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}ADM1Code}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{unique}\PY{p}{(}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}11}]:} \PY{n}{df\PYZus{}2008\PYZus{}usel}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}ADM1Code}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{unique}\PY{p}{(}\PY{p}{)}
 \end{Verbatim}
 
 
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}17}]:} [USDC, USMD, US, USMO, USOR, {\ldots}, USRI, USDE, USWI, USAR, USWY]
+{\color{outcolor}Out[{\color{outcolor}11}]:} [USDC, USMD, US, USMO, USOR, {\ldots}, USRI, USDE, USWI, USAR, USWY]
          Length: 53
          Categories (53, object): [USDC, USMD, US, USMO, {\ldots}, USDE, USWI, USAR, USWY]
 \end{Verbatim}
@@ -732,9 +576,10 @@ use it to rename our indices and present the mean AvgTone as grouped by
 state.
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}18}]:} \PY{n}{avgtone\PYZus{}2008} \PY{o}{=} \PY{n}{df\PYZus{}2008\PYZus{}usel}\PY{o}{.}\PY{n}{groupby}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}ADM1Code}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{AvgTone}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PYZbs{}
+{\color{incolor}In [{\color{incolor}12}]:} \PY{n}{avgtone\PYZus{}2008} \PY{o}{=} \PY{n}{df\PYZus{}2008\PYZus{}usel}\PY{o}{.}\PY{n}{groupby}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}ADM1Code}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{AvgTone}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PYZbs{}
                      \PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{p}{)}\PY{p}{[}\PY{n}{np}\PY{o}{.}\PY{n}{sort}\PY{p}{(}\PY{n}{df\PYZus{}2008\PYZus{}usel}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}ADM1Code}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{unique}\PY{p}{(}\PY{p}{)}\PY{p}{)}\PY{p}{]} \PYZbs{}
                      \PY{o}{.}\PY{n}{rename}\PY{p}{(}\PY{n}{state\PYZus{}dict}\PY{p}{)}
+                 
          \PY{n}{avgtone\PYZus{}2016} \PY{o}{=} \PY{n}{df\PYZus{}2016\PYZus{}usel}\PY{o}{.}\PY{n}{groupby}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}ADM1Code}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{AvgTone}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PYZbs{}
                      \PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{p}{)}\PY{p}{[}\PY{n}{np}\PY{o}{.}\PY{n}{sort}\PY{p}{(}\PY{n}{df\PYZus{}2016\PYZus{}usel}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}ADM1Code}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{unique}\PY{p}{(}\PY{p}{)}\PY{p}{)}\PY{p}{]} \PYZbs{}
                      \PY{o}{.}\PY{n}{rename}\PY{p}{(}\PY{n}{state\PYZus{}dict}\PY{p}{)}
@@ -743,54 +588,100 @@ state.
 
     We first show it on a line graph to give a general impression of the
 difference of AvgTone across the board between the two election years.
-Then we show a state heatmap to provide a better means of identifying
-unique states.
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}19}]:} \PY{n}{plt}\PY{o}{.}\PY{n}{figure}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{20}\PY{p}{,}\PY{l+m+mi}{10}\PY{p}{)}\PY{p}{)}
-         \PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{avgtone\PYZus{}2008}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Election Day 2008}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-         \PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{avgtone\PYZus{}2016}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Election Day 2016}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}13}]:} \PY{n}{avgtone\PYZus{}2008}\PY{o}{.}\PY{n}{index}
+\end{Verbatim}
+
+
+\begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}13}]:} Index(['National', 'Alaska', 'Alabama', 'Arkansas', 'Arizona', 'California',
+                'Colorado', 'Connecticut', 'District of Columbia', 'Delaware',
+                'Florida', 'Georgia', 'Hawaii', 'Iowa', 'Idaho', 'Illinois', 'Indiana',
+                'Kansas', 'Kentucky', 'Louisiana', 'Massachusetts', 'Maryland', 'Maine',
+                'Michigan', 'Minnesota', 'Missouri', 'Mississippi', 'Montana',
+                'North Carolina', 'North Dakota', 'Nebraska', 'New Hampshire',
+                'New Jersey', 'New Mexico', 'Nevada', 'New York', 'Ohio', 'Oklahoma',
+                'Oregon', 'Pennsylvania', 'Puerto Rico', 'Rhode Island',
+                'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah',
+                'Virginia', 'Vermont', 'Washington', 'Wisconsin', 'West Virginia',
+                'Wyoming'],
+               dtype='object', name='ActionGeo\_ADM1Code')
+\end{Verbatim}
+            
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}14}]:} \PY{n}{std\PYZus{}2008} \PY{o}{=} \PY{n}{df\PYZus{}2008\PYZus{}usel}\PY{o}{.}\PY{n}{groupby}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}ADM1Code}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{AvgTone}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PYZbs{}
+                 \PY{o}{.}\PY{n}{std}\PY{p}{(}\PY{p}{)}\PY{p}{[}\PY{n}{np}\PY{o}{.}\PY{n}{sort}\PY{p}{(}\PY{n}{df\PYZus{}2008\PYZus{}usel}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}ADM1Code}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{unique}\PY{p}{(}\PY{p}{)}\PY{p}{)}\PY{p}{]} \PYZbs{}
+                 \PY{o}{.}\PY{n}{rename}\PY{p}{(}\PY{n}{state\PYZus{}dict}\PY{p}{)}
+         \PY{n}{std\PYZus{}2016} \PY{o}{=} \PY{n}{df\PYZus{}2016\PYZus{}usel}\PY{o}{.}\PY{n}{groupby}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}ADM1Code}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{AvgTone}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PYZbs{}
+                 \PY{o}{.}\PY{n}{std}\PY{p}{(}\PY{p}{)}\PY{p}{[}\PY{n}{np}\PY{o}{.}\PY{n}{sort}\PY{p}{(}\PY{n}{df\PYZus{}2016\PYZus{}usel}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}ADM1Code}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{unique}\PY{p}{(}\PY{p}{)}\PY{p}{)}\PY{p}{]} \PYZbs{}
+                 \PY{o}{.}\PY{n}{rename}\PY{p}{(}\PY{n}{state\PYZus{}dict}\PY{p}{)}
+         
+         \PY{n}{plt}\PY{o}{.}\PY{n}{figure}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{20}\PY{p}{,}\PY{l+m+mi}{15}\PY{p}{)}\PY{p}{)}
+         \PY{n}{plt}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n}{avgtone\PYZus{}2008}\PY{o}{.}\PY{n}{index}\PY{p}{,} \PY{n}{avgtone\PYZus{}2008}\PY{p}{,} 
+                     \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Election Day 2008}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{g}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+         \PY{n}{plt}\PY{o}{.}\PY{n}{errorbar}\PY{p}{(}\PY{n}{avgtone\PYZus{}2008}\PY{o}{.}\PY{n}{index}\PY{p}{,} \PY{n}{avgtone\PYZus{}2008}\PY{p}{,} 
+                      \PY{n}{yerr}\PY{o}{=}\PY{n}{std\PYZus{}2008}\PY{p}{,} \PY{n}{alpha}\PY{o}{=}\PY{l+m+mf}{0.3}\PY{p}{,} \PY{n}{fmt}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{o}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}
+                      \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Election Day 2008 Standard Deviation}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{green}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}
+                      \PY{n}{capsize}\PY{o}{=}\PY{l+m+mi}{5}\PY{p}{)}
+         
+         \PY{n}{plt}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n}{avgtone\PYZus{}2016}\PY{o}{.}\PY{n}{index}\PY{p}{,} \PY{n}{avgtone\PYZus{}2016}\PY{p}{,} 
+                  \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Election Day 2016}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{r}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+         \PY{n}{plt}\PY{o}{.}\PY{n}{errorbar}\PY{p}{(}\PY{n}{avgtone\PYZus{}2016}\PY{o}{.}\PY{n}{index}\PY{p}{,} \PY{n}{avgtone\PYZus{}2016}\PY{p}{,} 
+                      \PY{n}{yerr}\PY{o}{=}\PY{n}{std\PYZus{}2016}\PY{p}{,} \PY{n}{alpha}\PY{o}{=}\PY{l+m+mf}{0.3}\PY{p}{,} \PY{n}{fmt}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{o}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}
+                      \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Election Day 2016 Standard Deviation}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{red}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}
+                      \PY{n}{capsize}\PY{o}{=}\PY{l+m+mi}{5}\PY{p}{)}
+         
          \PY{n}{plt}\PY{o}{.}\PY{n}{xticks}\PY{p}{(}\PY{n}{rotation}\PY{o}{=}\PY{l+m+mi}{90}\PY{p}{)}\PY{p}{;}
          \PY{n}{plt}\PY{o}{.}\PY{n}{ylim}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mf}{4.5}\PY{p}{,} \PY{l+m+mi}{8}\PY{p}{)}
-         \PY{n}{plt}\PY{o}{.}\PY{n}{legend}\PY{p}{(}\PY{p}{)}
+         \PY{n}{plt}\PY{o}{.}\PY{n}{legend}\PY{p}{(}\PY{n}{loc}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mi}{0}\PY{p}{)}\PY{p}{)}
+         \PY{n}{plt}\PY{o}{.}\PY{n}{xlabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{State}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+         \PY{n}{plt}\PY{o}{.}\PY{n}{ylabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Average Tone}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
          \PY{n}{plt}\PY{o}{.}\PY{n}{title}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Mean AvgTone by State on Election Day 2008 and 2016}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}\PY{p}{;}
 \end{Verbatim}
 
 
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_48_0.png}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_39_0.png}
     \end{center}
     { \hspace*{\fill} \\}
     
+    Finally we show a US heatmap to provide a better means of identifying
+unique states and variance in between the states.
+
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}20}]:} \PY{n}{state\PYZus{}heat\PYZus{}map}\PY{p}{(}\PY{n}{avgtone\PYZus{}2008}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{l+m+mf}{4.5}\PY{p}{,} \PY{l+m+mi}{8}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Average Tone of News on Election Day 2008}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}\PY{p}{;}
+{\color{incolor}In [{\color{incolor}15}]:} \PY{n}{state\PYZus{}heat\PYZus{}map}\PY{p}{(}\PY{n}{avgtone\PYZus{}2008}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{l+m+mf}{4.5}\PY{p}{,} \PY{l+m+mi}{8}\PY{p}{,} 
+                        \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Average Tone of Media on Election Day 2008}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}\PY{p}{;}
 \end{Verbatim}
 
 
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_49_0.png}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_41_0.png}
     \end{center}
     { \hspace*{\fill} \\}
     
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}21}]:} \PY{n}{state\PYZus{}heat\PYZus{}map}\PY{p}{(}\PY{n}{avgtone\PYZus{}2016}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{l+m+mf}{4.5}\PY{p}{,} \PY{l+m+mi}{8}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Average Tone of News on Election Day 2016}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}\PY{p}{;}
+{\color{incolor}In [{\color{incolor}16}]:} \PY{n}{state\PYZus{}heat\PYZus{}map}\PY{p}{(}\PY{n}{avgtone\PYZus{}2016}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{l+m+mf}{4.5}\PY{p}{,} \PY{l+m+mi}{8}\PY{p}{,} 
+                        \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Average Tone of Media on Election Day 2016}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}\PY{p}{;}
 \end{Verbatim}
 
 
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_50_0.png}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_42_0.png}
     \end{center}
     { \hspace*{\fill} \\}
     
     \section{Conclusion}\label{conclusion}
 
     We set out in this exploration to understand whether we could see a
-significant different in the average tone of the documents that discuss
-events taking place in the USA. It seems very likely that there is a
-statistically significant shift in tone in the 8 years. There are a
-myriad of things that might be behind this, and it would be worthwhile
-to dig deeper into the data to see what similarities can be found
-between the years.
+significant difference in the average tone of the documents that discuss
+events taking place in the USA. These last two heatmaps in particular
+show that this difference in tone appears to extend across all states
+and was not localized to parts of the country. Thus, it seems very
+likely that there is a statistically significant shift in tone in the 8
+years. There are a myriad of things that might be behind this, and it
+would be worthwhile to dig deeper into the data to see what similarities
+can be found between the years.
 
 Were the events simply drastically different or had the tone itself
 changed due to differences in reporting/media agencies?
@@ -798,6 +689,11 @@ changed due to differences in reporting/media agencies?
 Does this have something to do with other known sociological effects
 that may have happened in the interim 8 years, perhaps shifts in the
 partisan landscape of media?
+
+Was the nature of political rhetoric used in the 2016 election what
+caused such a shift? Was there a more sudden shift when the 2016
+election season began, or was there a steady trend over the last 8
+years?
 
 It's not at all clear what might cause such a drastic shift, especially
 since 2008 was in the midst of the last recession, and it should prove
@@ -825,17 +721,278 @@ https://stackoverflow.com/questions/39742305/how-to-use-basemap-python-to-plot-u
 
 https://www.dataquest.io/blog/pandas-big-data/
 
-    \section{Appendix: AvgTone Boxplot by
-State}\label{appendix-avgtone-boxplot-by-state}
+    \section{Appendix: Indepth Data
+Preparation}\label{appendix-indepth-data-preparation}
+
+    We first load in row limited samples of our two datasets. Our first step
+is to quickly verify everything looks normal.
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}22}]:} \PY{n}{df\PYZus{}2008\PYZus{}usel}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}ADM1Code}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{df\PYZus{}2008\PYZus{}usel}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}ADM1Code}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{cat}\PY{o}{.}\PY{n}{remove\PYZus{}unused\PYZus{}categories}\PY{p}{(}\PY{p}{)}
-         \PY{n}{df\PYZus{}2008\PYZus{}usel}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}ADM1Code\PYZus{}Readable}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{df\PYZus{}2008\PYZus{}usel}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}ADM1Code}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{apply}\PY{p}{(}\PY{k}{lambda} \PY{n}{x}\PY{p}{:}\PY{n}{state\PYZus{}dict}\PY{p}{[}\PY{n}{x}\PY{p}{]}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}17}]:} \PY{n}{data\PYZus{}2008} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{./200811.csv}\PY{l+s+s2}{\PYZdq{}}
+         \PY{n}{data\PYZus{}2016} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{./20161108.export.CSV}\PY{l+s+s2}{\PYZdq{}}
+         
+         \PY{n}{df\PYZus{}2008\PYZus{}l} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{n}{data\PYZus{}2008}\PY{p}{,} \PY{n}{sep}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}t}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{nrows}\PY{o}{=}\PY{l+m+mi}{1000}\PY{p}{)}
+         \PY{n}{df\PYZus{}2016\PYZus{}l} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{n}{data\PYZus{}2016}\PY{p}{,} \PY{n}{sep}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}t}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{nrows}\PY{o}{=}\PY{l+m+mi}{1000}\PY{p}{)}
+         
+         \PY{n}{df\PYZus{}2016\PYZus{}l}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+
+
+\begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}17}]:}    596760615  20151109  201511  2015  2015.8466 Unnamed: 5    Unnamed: 6  \textbackslash{}
+         0  596760616  20151109  201511  2015  2015.8466        NaN           NaN   
+         1  596760617  20151109  201511  2015  2015.8466        AUT      AUSTRIAN   
+         2  596760618  20151109  201511  2015  2015.8466        AUT      AUSTRIAN   
+         3  596760619  20151109  201511  2015  2015.8466     AUTJUD      AUSTRIAN   
+         4  596760620  20151109  201511  2015  2015.8466  BWAELIGOV  FESTUS MOGAE   
+         
+           Unnamed: 7  Unnamed: 8 Unnamed: 9  \textbackslash{}
+         0        NaN         NaN        NaN   
+         1        AUT         NaN        NaN   
+         2        AUT         NaN        NaN   
+         3        AUT         NaN        NaN   
+         4        BWA         NaN        NaN   
+         
+                                                         {\ldots}                                                \textbackslash{}
+         0                                               {\ldots}                                                 
+         1                                               {\ldots}                                                 
+         2                                               {\ldots}                                                 
+         3                                               {\ldots}                                                 
+         4                                               {\ldots}                                                 
+         
+              967537  3.1 Times Square, New York, United States.1 US.1  USNY.1  \textbackslash{}
+         0   1662328    3  Los Angeles, California, United States   US    USCA   
+         1        AU    1                                 Austria   AU      AU   
+         2        IR    1                                 Austria   AU      AU   
+         3        AU    1                                 Austria   AU      AU   
+         4  -1397372    4          Gaborone, South East, Botswana   BC    BC09   
+         
+           40.757.1 -73.986.1  967537.1  20161108  \textbackslash{}
+         0  34.0522 -118.2440   1662328  20161108   
+         1  47.3333   13.3333        AU  20161108   
+         2  47.3333   13.3333        AU  20161108   
+         3  47.3333   13.3333        AU  20161108   
+         4 -24.6464   25.9119  -1397372  20161108   
+         
+           http://www.wsaw.com/content/news/Candidates-make-final-stops-on-Election-Day-eve-400321591.html  
+         0  http://www.rollingstone.com/culture/news/jinx-{\ldots}                                               
+         1  https://www.scmagazine.com/swiss-investigators{\ldots}                                               
+         2  https://www.scmagazine.com/swiss-investigators{\ldots}                                               
+         3  https://www.scmagazine.com/swiss-investigators{\ldots}                                               
+         4  http://www.albuquerqueexpress.com/index.php/si{\ldots}                                               
+         
+         [5 rows x 58 columns]
+\end{Verbatim}
+            
+    \subsubsection{Fixing Column Names}\label{fixing-column-names}
+
+    We already have a problem! The CSV's do not provide a header. With the
+documentation, we can determine that there are 58 columns for data after
+April 2013, and 57 before. With this, we can reload our dataframes
+properly.
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}18}]:} \PY{n}{df\PYZus{}2008\PYZus{}l} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{n}{data\PYZus{}2008}\PY{p}{,} \PY{n}{sep}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}t}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{names}\PY{o}{=}\PY{n}{GDELT\PYZus{}columns}\PY{p}{[}\PY{p}{:}\PY{l+m+mi}{57}\PY{p}{]}\PY{p}{,} 
+                                 \PY{n}{nrows}\PY{o}{=}\PY{l+m+mi}{1000}\PY{p}{)}
+         
+         \PY{n}{df\PYZus{}2016\PYZus{}l} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{n}{data\PYZus{}2016}\PY{p}{,} \PY{n}{sep}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}t}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{names}\PY{o}{=}\PY{n}{GDELT\PYZus{}columns}\PY{p}{,} 
+                                 \PY{n}{nrows}\PY{o}{=}\PY{l+m+mi}{1000}\PY{p}{)}
+\end{Verbatim}
+
+
+    \subsubsection{Improving Memory Consumption and
+Performance}\label{improving-memory-consumption-and-performance}
+
+    By default, Pandas makes safe but space inefficient choices for data
+types by always defaulting to int64/float64/object. We can improve
+memory use and load performance when making a dataframe out of the full
+CSV's by omitting any extra data that we are not interested in for our
+current analysis and, more importantly, by determining optimized data
+types for each column.
+
+For the former case, we note by looking at the
+\href{http://data.gdeltproject.org/documentation/GDELT-Data_Format_Codebook.pdf}{Data
+Format Codebook} that there are multiple columns which encode dates in
+different ways. There are also DATEADDED and SOURCEURL fields,
+describing the date the record was added to the data set and the source
+of the news respectively, which will not have any bearing on our
+analysis. Thus we omit these columns.
+
+Next we look into appropriate data types for our columns. For this
+analysis we follow the lead of
+\href{https://www.dataquest.io/blog/pandas-big-data/}{Using pandas with
+large data}. We first filter our dataframes for particular classes of
+types: integers/floats/objects. For the purposes of this report, we only
+follow the work on a single dataframe but the analysis has been applied
+to both.
+
+    \subsubsection{Optimizing Number
+Columns}\label{optimizing-number-columns}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}19}]:} \PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}int} \PY{o}{=} \PY{n}{df\PYZus{}2008\PYZus{}l}\PY{o}{.}\PY{n}{select\PYZus{}dtypes}\PY{p}{(}\PY{n}{include}\PY{o}{=}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{int64}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}
+         \PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}int}\PY{o}{.}\PY{n}{columns}
+\end{Verbatim}
+
+
+\begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}19}]:} Index(['GLOBALEVENTID', 'SQLDATE', 'MonthYear', 'Year', 'IsRootEvent',
+                'EventCode', 'EventBaseCode', 'EventRootCode', 'QuadClass',
+                'NumMentions', 'NumSources', 'NumArticles', 'Actor1Geo\_Lat',
+                'Actor1Geo\_Long', 'Actor1Geo\_FeatureID', 'Actor2Geo\_Type',
+                'Actor2Geo\_FeatureID', 'DATEADDED'],
+               dtype='object')
+\end{Verbatim}
+            
+    We can then attempt to apply "downcasting" to these integer columns.
+That is, we can use a method of Pandas, to\_numeric, to find the
+smallest size integer type which will support all values of the columns.
+The available types are int8, int16, int32 and int64, as well as
+unsigned variants (only positive numbers) uint8, uint16, uint32 and
+uint64. The numbers at the end of each type indicate the number of bits
+consumed in order to represent the data type, and thus smaller numbers
+correspond with less memory consumption.
+
+The data's documentation also reaveals that all of these columns will
+have positive values. (We also find that some of these fields are not
+best represented as integers for the purposes of analysis, more on this
+below.) We now apply the downcasting into unsigned integer data types
+and show a comparison of memory usage.
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}20}]:} \PY{n}{converted\PYZus{}int} \PY{o}{=} \PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}int}\PY{o}{.}\PY{n}{apply}\PY{p}{(}\PY{n}{pd}\PY{o}{.}\PY{n}{to\PYZus{}numeric}\PY{p}{,}\PY{n}{downcast}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{unsigned}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+         
+         \PY{n}{num\PYZus{}before}\PY{p}{,} \PY{n}{str\PYZus{}before} \PY{o}{=} \PY{n}{mem\PYZus{}usage}\PY{p}{(}\PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}int}\PY{p}{)}
+         \PY{n}{num\PYZus{}after}\PY{p}{,} \PY{n}{str\PYZus{}after} \PY{o}{=} \PY{n}{mem\PYZus{}usage}\PY{p}{(}\PY{n}{converted\PYZus{}int}\PY{p}{)}
+         
+         \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Before downcast: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{str\PYZus{}before}\PY{p}{)}
+         \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{After downcast: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{str\PYZus{}after}\PY{p}{)}
+         \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Percent Decrease}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{num\PYZus{}after} \PY{o}{/} \PY{n}{num\PYZus{}before}\PY{p}{)}
 \end{Verbatim}
 
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}23}]:} \PY{n}{plt}\PY{o}{.}\PY{n}{figure}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{)}\PY{p}{)}
+Before downcast:  0.14 MB
+After downcast:  0.04 MB
+Percent Decrease 0.7287617990005553
+
+    \end{Verbatim}
+
+    We see a 72\% decrease in memory usage in this example. A similar
+process to the one we just applied to int columns can be used for float
+columns.
+
+    \subsubsection{Optimizing Object
+Columns}\label{optimizing-object-columns}
+
+    Optimizing object columns is more involved. Generally an object column
+is made up of string values. In some cases, there is nothing we can do
+to minimize memory consumption. This generally applies when there are
+many unique string values in a column. However, if there are sufficient
+repeats, we can use a different numpy data type known as a category.
+
+This data type leverages a map-like structure to translate repeated
+strings into less memory intensive integers, and then covertly replaces
+the repeated values with these integers. The original values are then
+recoverable in this case by following the mapping. This can result in
+huge increases in memory efficiency. For a first pass, we apply a
+methodology present in our source for this memory optimization which
+replaces an object column with category if less than 50\% of the values
+are unique.
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}21}]:} \PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}obj} \PY{o}{=} \PY{n}{df\PYZus{}2008\PYZus{}l}\PY{o}{.}\PY{n}{select\PYZus{}dtypes}\PY{p}{(}\PY{n}{include}\PY{o}{=}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{object}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}
+         \PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}obj}\PY{o}{.}\PY{n}{columns}
+\end{Verbatim}
+
+
+\begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}21}]:} Index(['Actor2Code', 'Actor2Name', 'Actor2CountryCode', 'Actor2KnownGroupCode',
+                'Actor2Religion1Code', 'Actor2Religion2Code', 'Actor2Type1Code',
+                'Actor2Type2Code', 'Actor2Type3Code', 'Actor2Geo\_FullName',
+                'Actor2Geo\_CountryCode', 'Actor2Geo\_ADM1Code', 'ActionGeo\_FullName',
+                'ActionGeo\_CountryCode', 'ActionGeo\_ADM1Code'],
+               dtype='object')
+\end{Verbatim}
+            
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}22}]:} \PY{n}{converted\PYZus{}obj} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{DataFrame}\PY{p}{(}\PY{p}{)}
+         
+         \PY{c+c1}{\PYZsh{} Credit to https://www.dataquest.io/blog/pandas\PYZhy{}big\PYZhy{}data/}
+         \PY{k}{for} \PY{n}{col} \PY{o+ow}{in} \PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}obj}\PY{o}{.}\PY{n}{columns}\PY{p}{:}
+             \PY{n}{num\PYZus{}unique\PYZus{}values} \PY{o}{=} \PY{n+nb}{len}\PY{p}{(}\PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}obj}\PY{p}{[}\PY{n}{col}\PY{p}{]}\PY{o}{.}\PY{n}{unique}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+             \PY{n}{num\PYZus{}total\PYZus{}values} \PY{o}{=} \PY{n+nb}{len}\PY{p}{(}\PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}obj}\PY{p}{[}\PY{n}{col}\PY{p}{]}\PY{p}{)}
+             \PY{k}{if} \PY{n}{num\PYZus{}unique\PYZus{}values} \PY{o}{/} \PY{n}{num\PYZus{}total\PYZus{}values} \PY{o}{\PYZlt{}} \PY{l+m+mf}{0.5}\PY{p}{:}
+                 \PY{n}{converted\PYZus{}obj}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{col}\PY{p}{]} \PY{o}{=} \PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}obj}\PY{p}{[}\PY{n}{col}\PY{p}{]}\PY{o}{.}\PY{n}{astype}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{category}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+             \PY{k}{else}\PY{p}{:}
+                 \PY{n}{converted\PYZus{}obj}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{col}\PY{p}{]} \PY{o}{=} \PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}obj}\PY{p}{[}\PY{n}{col}\PY{p}{]}
+                 
+         \PY{n}{num\PYZus{}before}\PY{p}{,} \PY{n}{str\PYZus{}before} \PY{o}{=} \PY{n}{mem\PYZus{}usage}\PY{p}{(}\PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}obj}\PY{p}{)}
+         \PY{n}{num\PYZus{}after}\PY{p}{,} \PY{n}{str\PYZus{}after} \PY{o}{=} \PY{n}{mem\PYZus{}usage}\PY{p}{(}\PY{n}{converted\PYZus{}obj}\PY{p}{)}
+         
+         \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Before downcast: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{str\PYZus{}before}\PY{p}{)}
+         \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{After downcast: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{str\PYZus{}after}\PY{p}{)}
+         \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Percent Decrease}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{num\PYZus{}after} \PY{o}{/} \PY{n}{num\PYZus{}before}\PY{p}{)}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+Before downcast:  0.74 MB
+After downcast:  0.24 MB
+Percent Decrease 0.675466344710465
+
+    \end{Verbatim}
+
+    \subsubsection{Test Final Optimized
+Dataframe}\label{test-final-optimized-dataframe}
+
+    We now collate the information revealed by these naive data type passes
+as well as our knowledge of the documentation to arrive at our final
+data types for the columns we wish to investigate.
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}23}]:} \PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}opti} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{n}{data\PYZus{}2008}\PY{p}{,} \PY{n}{sep}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}t}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{names}\PY{o}{=}\PY{n}{GDELT\PYZus{}columns}\PY{p}{[}\PY{p}{:}\PY{l+m+mi}{57}\PY{p}{]}\PY{p}{,} \PYZbs{}
+                                 \PY{n}{usecols}\PY{o}{=}\PY{n}{usecols}\PY{p}{,} \PY{n}{dtype}\PY{o}{=}\PY{n}{dtype\PYZus{}dict}\PY{p}{,} \PYZbs{}
+                                 \PY{n}{parse\PYZus{}dates}\PY{o}{=}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SQLDATE}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{,} \PY{n}{nrows}\PY{o}{=}\PY{l+m+mi}{1000}\PY{p}{)}
+         \PY{n}{df\PYZus{}2016\PYZus{}l\PYZus{}opti} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{n}{data\PYZus{}2016}\PY{p}{,} \PY{n}{sep}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}t}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{names}\PY{o}{=}\PY{n}{GDELT\PYZus{}columns}\PY{p}{,} \PYZbs{}
+                                 \PY{n}{usecols}\PY{o}{=}\PY{n}{usecols}\PY{p}{,} \PY{n}{dtype}\PY{o}{=}\PY{n}{dtype\PYZus{}dict}\PY{p}{,} \PYZbs{}
+                                 \PY{n}{parse\PYZus{}dates}\PY{o}{=}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SQLDATE}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{,} \PY{n}{nrows}\PY{o}{=}\PY{l+m+mi}{1000}\PY{p}{)}
+         
+         \PY{n}{num\PYZus{}before}\PY{p}{,} \PY{n}{str\PYZus{}before} \PY{o}{=} \PY{n}{mem\PYZus{}usage}\PY{p}{(}\PY{n}{df\PYZus{}2008\PYZus{}l}\PY{p}{)}
+         \PY{n}{num\PYZus{}after}\PY{p}{,} \PY{n}{str\PYZus{}after} \PY{o}{=} \PY{n}{mem\PYZus{}usage}\PY{p}{(}\PY{n}{df\PYZus{}2008\PYZus{}l\PYZus{}opti}\PY{p}{)}
+         
+         \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Before downcast: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{str\PYZus{}before}\PY{p}{)}
+         \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{After downcast: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{str\PYZus{}after}\PY{p}{)}
+         \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Percent Decrease}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{num\PYZus{}after} \PY{o}{/} \PY{n}{num\PYZus{}before}\PY{p}{)}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+Before downcast:  1.06 MB
+After downcast:  0.68 MB
+Percent Decrease 0.36238106842168205
+
+    \end{Verbatim}
+
+    In the end, with optimized data type choices that also take into
+consideration the type of analysis we wish to perform, we have a 36\%
+reduction in memory usage for our limited samples. And note we can
+expect the memory savings to be even greater for the full data frames
+assuming we chose our category columns correctly!
+
+    \section{Appendix: AvgTone Boxplot by
+State}\label{appendix-avgtone-boxplot-by-state}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}24}]:} \PY{n}{df\PYZus{}2008\PYZus{}usel}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}ADM1Code}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{df\PYZus{}2008\PYZus{}usel}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}ADM1Code}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PYZbs{}
+                                             \PY{o}{.}\PY{n}{cat}\PY{o}{.}\PY{n}{remove\PYZus{}unused\PYZus{}categories}\PY{p}{(}\PY{p}{)}
+         \PY{n}{df\PYZus{}2008\PYZus{}usel}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}ADM1Code\PYZus{}Readable}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{df\PYZus{}2008\PYZus{}usel}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}ADM1Code}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PYZbs{}
+                                             \PY{o}{.}\PY{n}{apply}\PY{p}{(}\PY{k}{lambda} \PY{n}{x}\PY{p}{:}\PY{n}{state\PYZus{}dict}\PY{p}{[}\PY{n}{x}\PY{p}{]}\PY{p}{)}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}25}]:} \PY{n}{plt}\PY{o}{.}\PY{n}{figure}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{)}\PY{p}{)}
          \PY{n}{sns}\PY{o}{.}\PY{n}{boxplot}\PY{p}{(}\PY{n}{data}\PY{o}{=}\PY{n}{df\PYZus{}2008\PYZus{}usel}\PY{p}{,}
                      \PY{n}{x}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{AvgTone}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{y}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ActionGeo\PYZus{}ADM1Code\PYZus{}Readable}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
          \PY{n}{plt}\PY{o}{.}\PY{n}{axvline}\PY{p}{(}\PY{n}{df\PYZus{}2008\PYZus{}usel}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{AvgTone}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{median}\PY{p}{(}\PY{p}{)}\PY{p}{,} \PY{n}{linewidth}\PY{o}{=}\PY{l+m+mi}{5}\PY{p}{,} \PY{n}{alpha}\PY{o}{=}\PY{l+m+mf}{0.5}\PY{p}{)}
@@ -844,14 +1001,14 @@ State}\label{appendix-avgtone-boxplot-by-state}
 
 
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_57_0.png}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_70_0.png}
     \end{center}
     { \hspace*{\fill} \\}
     
     \section{Appendix: Set CSS Style}\label{appendix-set-css-style}
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}24}]:} \PY{c+c1}{\PYZsh{} CSS from https://github.com/CamDavidsonPilon/Probabilistic\PYZhy{}Programming\PYZhy{}and\PYZhy{}Bayesian\PYZhy{}Methods\PYZhy{}for\PYZhy{}Hackers/blob/master/Chapter1\PYZus{}Introduction/Ch1\PYZus{}Introduction\PYZus{}PyMC2.ipynb}
+{\color{incolor}In [{\color{incolor}26}]:} \PY{c+c1}{\PYZsh{} CSS from https://github.com/CamDavidsonPilon/Probabilistic\PYZhy{}Programming\PYZhy{}and\PYZhy{}Bayesian\PYZhy{}Methods\PYZhy{}for\PYZhy{}Hackers/blob/master/Chapter1\PYZus{}Introduction/Ch1\PYZus{}Introduction\PYZus{}PyMC2.ipynb}
          \PY{k+kn}{from} \PY{n+nn}{IPython}\PY{n+nn}{.}\PY{n+nn}{core}\PY{n+nn}{.}\PY{n+nn}{display} \PY{k}{import} \PY{n}{HTML}
          
          \PY{k}{def} \PY{n+nf}{css\PYZus{}styling}\PY{p}{(}\PY{p}{)}\PY{p}{:}
@@ -862,7 +1019,7 @@ State}\label{appendix-avgtone-boxplot-by-state}
 
 
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}24}]:} <IPython.core.display.HTML object>
+{\color{outcolor}Out[{\color{outcolor}26}]:} <IPython.core.display.HTML object>
 \end{Verbatim}
             
 

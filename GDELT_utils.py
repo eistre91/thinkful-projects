@@ -427,7 +427,7 @@ def state_heat_map(data, vmin, vmax, title):
     #%% -------- choose a color for each state based on population density. -------
     colors={}
     statenames=[]
-    cmap = plt.cm.afmhot # use 'reversed hot' colormap
+    cmap = plt.cm.RdYlGn
     vmin = vmin; vmax = vmax # set range.
     norm = Normalize(vmin=vmin, vmax=vmax)
     for shapedict in m.states_info:
