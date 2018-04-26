@@ -1,0 +1,16 @@
+-- Collate all days for which it rained in any zip code
+WITH
+	rainy_days
+AS (
+SELECT `Date`, events
+FROM weather
+WHERE events = "Rain"
+GROUP BY `Date`
+)
+
+SELECT Date, trip_id, max(duration)
+FROM trips
+JOIN rainy_days
+ON 
+	DATE(trips.start_date) = rainy_days.date 
+GROUP BY Date

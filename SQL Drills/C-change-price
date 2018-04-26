@@ -1,0 +1,2 @@
+UPDATE listings_full
+SET price = substr(price, 2)

@@ -1,0 +1,6 @@
+SELECT neighbourhood, COUNT(*) c
+FROM listings
+JOIN reviews
+ON listings.id = reviews.listing_id
+GROUP BY neighbourhood
+ORDER BY c DESC

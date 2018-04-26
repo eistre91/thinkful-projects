@@ -1,0 +1,11 @@
+SELECT *
+FROM 
+	trips
+JOIN 
+	weather 
+ON 
+	DATE(trips.start_date) = weather.date AND
+	trips.zip_code = weather.ZIP
+WHERE weather.events = "Rain"
+ORDER BY trips.duration DESC
+LIMIT 3

@@ -1,0 +1,4 @@
+SELECT date, COUNT(*) c
+FROM reviews
+GROUP BY date
+ORDER BY c DESC

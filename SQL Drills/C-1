@@ -1,0 +1,4 @@
+SELECT id, name, price
+FROM listings_full
+ORDER BY price DESC
+LIMIT 1

@@ -1,0 +1,9 @@
+SELECT status.station_id, stations.name, COUNT(*) c
+FROM status
+JOIN 
+	stations
+ON
+	status.station_id = stations.station_id
+WHERE docks_available = 0
+GROUP BY status.station_id
+ORDER BY c

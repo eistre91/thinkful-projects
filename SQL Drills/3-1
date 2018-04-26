@@ -1,0 +1,2 @@
+SELECT max(MaxTemperatureF), zip
+FROM weather

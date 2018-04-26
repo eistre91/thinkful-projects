@@ -1,0 +1,5 @@
+SELECT date, AVG(price) p
+FROM calendar
+WHERE available = "t"
+GROUP BY date
+ORDER BY p
