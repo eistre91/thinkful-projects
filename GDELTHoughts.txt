@@ -1,0 +1,36 @@
+NumMentions + Goldstein Scale
+
+AvgTone + Goldstein Scale
+
+AvgTone + QuadClass
+
+AvgTone + NumMentions
+
+AvgTone + EventBaseCode - extremes?
+
+AvgTone + SOURCEURL
+
+NumMentions + IsRootEvent
+
+QuadClass + IsRootEvent
+
+AvgTone Actor1Geo_ADM1Code
+
+Actor1Geo_ADM1Code + Actor2Geo_ADM1Code + ActionGeo_ADM1Code
+
+
+
+
+
+
+
+
+Outcome Variable is AvgTone or Goldstein Scale
+
+GoldsteinScale + NumMentions
+
+
+
+
+
+what factors lead to COERCE and above?
