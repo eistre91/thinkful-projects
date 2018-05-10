@@ -105,3 +105,4 @@ ENV/
 *.CSV
 *.db
 *.zip
+*.pkl
