@@ -106,3 +106,5 @@ ENV/
 *.db
 *.zip
 *.pkl
+*.db-journal
+*.xls
