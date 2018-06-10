@@ -89,7 +89,7 @@ def unify_rare_cats(data, category, cut_off):
     past_cut_off = (vc/len(data)) > cut_off
     remaining = list(vc[past_cut_off].index)
     data[(category + '_unify')] = data[category].astype(str) \
-                                                .apply(lambda x: map_missing(x, remaining, "OTHER")) \
+                                                .apply(lambda x: map_rare(x, remaining, "OTHER")) \
                                                 .astype('category')
             
 def map_unknown(x):
@@ -401,6 +401,11 @@ dtype_dict = {'GLOBALEVENTID': 'uint32',
  'Actor1Geo_Type': 'float16', 'Actor1Geo_FullName': 'str', 'Actor1Geo_CountryCode': 'category', 'Actor1Geo_ADM1Code': 'category', 'Actor1Geo_Lat': 'float32', 'Actor1Geo_Long': 'float32', 'Actor1Geo_FeatureID': 'category', 
  'Actor2Geo_Type': 'float16', 'Actor2Geo_FullName': 'str', 'Actor2Geo_CountryCode': 'category', 'Actor2Geo_ADM1Code': 'category',  'Actor2Geo_Lat': 'float32', 'Actor2Geo_Long': 'float32', 'Actor2Geo_FeatureID': 'category',
  'ActionGeo_Type': 'float16', 'ActionGeo_FullName': 'str', 'ActionGeo_CountryCode': 'category', 'ActionGeo_ADM1Code': 'category', 'ActionGeo_Lat': 'float32', 'ActionGeo_Long': 'float32', 'ActionGeo_FeatureID': 'category'}
+dtype_dict_for_tone = {"EventRootCode": "category", "Actor1CountryCode": "category", 
+                           "Actor2CountryCode": "category", "Actor1Geo_CountryCode": "category", 
+                           "Actor2Geo_CountryCode": "category", "Actor1Type1Code": "category",
+                           "Actor2Type1Code": "category", "AVG(NumMentions)": "float64",
+                           "AVG(AvgTone)": "float64"}
 cameo_dict = {"01": "MAKE PUBLIC STATEMENT",
 "010": "Make statement, not specified below",
 "011": "Decline comment",
