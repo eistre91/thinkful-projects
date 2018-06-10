@@ -5,7 +5,390 @@ from mpl_toolkits.basemap import Basemap as Basemap
 from matplotlib.colors import rgb2hex, Normalize
 from matplotlib.patches import Polygon
 from matplotlib.colorbar import ColorbarBase
+from sklearn.model_selection import train_test_split
 
+def weak_reduce(sample, column, pvalue, mag, count_penalty):
+    tones = sample['AVG(AvgTone)']
+    cntry = sample[column]
+
+    one_hot = pd.get_dummies(cntry)
+    one_hot_tone = pd.concat([tones, one_hot], axis=1)
+
+    avg_avgtone_mean = one_hot_tone['AVG(AvgTone)'].mean()
+
+    country_info = []
+    for column in one_hot.columns:
+        temp = one_hot_tone[[column, 'AVG(AvgTone)']]
+        country = temp[temp[column] == 1]
+        columns_mean = None
+        if len(country) < count_penalty: 
+            column_means = [0, 0]
+            country_info.append((column, 
+                                 0, 
+                                 0, 
+                                 (temp[column].sum()),
+                                 1))
+        else:
+            column_means = temp.groupby(column).mean()['AVG(AvgTone)']
+            country_info.append((column, 
+                                 column_means[0] - column_means[1], 
+                                 np.absolute(column_means[0] - column_means[1]), 
+                                 (temp[column].sum()),
+                                 ttest_1samp(country, avg_avgtone_mean).pvalue[1]))
+
+    cntry_spec = pd.DataFrame(country_info, columns=["Country", "AvgTone_diff", "AvgTone_mag", "Num", "p-value"])
+
+    low_decs = cntry_spec[((cntry_spec['p-value'] > pvalue) & ((cntry_spec['AvgTone_mag'] < mag) & \
+               (cntry_spec['AvgTone_diff'] < 0)))]['Country']
+
+    low_incs = cntry_spec[((cntry_spec['p-value'] > pvalue) & ((cntry_spec['AvgTone_mag'] < mag) & \
+               (cntry_spec['AvgTone_diff'] > 0)))]['Country']
+
+    low_p_value = cntry_spec[((cntry_spec['p-value'] > pvalue) & ~((cntry_spec['AvgTone_mag'] < mag) & \
+               (cntry_spec['AvgTone_diff'] < 0)) & ~((cntry_spec['AvgTone_mag'] < mag) & \
+               (cntry_spec['AvgTone_diff'] > 0)))]['Country']
+    
+    return low_decs, low_incs, low_p_value
+
+def map_weak(x, low_decs, low_incs, low_p_value, translation):
+    #if x in l:
+    #    return x
+    if x == "nan":
+        return "UNKNOWN"
+    elif x in low_decs:
+        return "LOW_DEC"
+    elif x in low_incs:
+        return "LOW_INCS"
+    elif x in low_p_value:
+        return "LOW_P_VALUE"
+    else:
+        return x
+
+def unify_weak_cats(data, category, pvalue, mag, count_penalty):
+    low_decs, low_incs, low_p_value = weak_reduce(data, category, pvalue, mag)
+    low_decs_unique = low_decs.unique()
+    low_decs_unique = low_incs.unique()
+    low_p_value_unique = low_p_value.unique()
+    data[(category + '_unify')] = data[category].astype(str) \
+                                                .apply(lambda x: map_missing(x, low_decs_unique, 
+                                                                             low_decs_unique, 
+                                                                             low_p_value_unique, 
+                                                                             "OTHER")) \
+                                                .astype('category')
+            
+def map_rare(x, l, translation):
+    if x in l:
+        return x
+    elif x == "nan":
+        return "UNKNOWN"
+    else:
+        return translation
+
+def unify_rare_cats(data, category, cut_off):
+    vc = data[category].value_counts()
+    past_cut_off = (vc/len(data)) > cut_off
+    remaining = list(vc[past_cut_off].index)
+    data[(category + '_unify')] = data[category].astype(str) \
+                                                .apply(lambda x: map_missing(x, remaining, "OTHER")) \
+                                                .astype('category')
+            
+def map_unknown(x):
+    if x == 'nan':
+        return "UNKNOWN"
+    else:
+        return x            
+
+def init_sample(gdelt, frac): 
+    gdelt_sample = gdelt.sample(frac=frac) \
+                        .drop(['SQLDATE'], axis=1)
+    gdelt_sample['norm_NumMentions'] = (gdelt_sample['AVG(NumMentions)'] \
+                                                - gdelt_sample['AVG(NumMentions)'].mean())/ \
+                                        gdelt_sample['AVG(NumMentions)'].std()
+    gdelt_sample = gdelt_sample.drop(['AVG(NumMentions)'], axis=1) 
+    for category_col in gdelt_sample.columns:
+        if hasattr(gdelt_sample[category_col], 'cat'):
+            gdelt_sample[category_col] = gdelt_sample[category_col] \
+                                            .cat.remove_unused_categories()
+    return gdelt_sample.copy()    
+
+def pare(sample):
+    return sample.drop(['Actor1Geo_CountryCode', 'Actor2Geo_CountryCode'], axis=1)
+
+naive_cache = {}
+
+# https://github.com/pandas-dev/pandas/issues/8814
+def train_naive(sample, model):
+    h = pd.util.hash_pandas_object(sample).sum()
+    model_samp, feat_cols = None, None
+    if h not in naive_cache:
+        live_samp = sample.copy()
+
+        cat_dummies = []
+        drop_cols = []
+        for column in live_samp.columns:
+            if hasattr(live_samp[column], 'cat'):
+                live_samp[column] = live_samp[column].cat.add_categories(['UNK'])
+                live_samp[column].fillna('UNK')
+                hot = pd.get_dummies(live_samp[column], prefix=column)
+                cat_dummies.append(hot)
+                drop_cols.append(column)
+
+        live_samp = live_samp.drop(drop_cols, axis=1)            
+
+        one_hot_enc = pd.concat(cat_dummies, axis=1)
+
+        model_samp = pd.concat([live_samp, one_hot_enc], axis=1)
+        feat_cols = model_samp.columns.drop(['AVG(AvgTone)'])
+        
+        naive_cache[h] = (model_samp, feat_cols)
+    else:
+        model_samp, feat_cols = naive_cache[h]
+    
+    train, test = train_test_split(model_samp, test_size=0.25, random_state=42)
+    
+    Y = train['AVG(AvgTone)']
+    X = train[feat_cols]
+    model.fit(X, Y)
+
+    train_score = model.score(X, Y)
+    Y_test = test['AVG(AvgTone)']
+    X_test = test[feat_cols]
+    test_score = model.score(X_test, Y_test)
+    
+    return train_score, test_score, model, model_samp, train, test
+
+pared_cache = {}
+
+def train_pared(sample, model):
+    h = pd.util.hash_pandas_object(sample).sum()
+    model_samp, feat_cols = None, None
+    if h not in pared_cache:
+        live_samp = sample.copy()
+        live_samp = pare(live_samp)
+
+        cat_dummies = []
+        drop_cols = []
+        for column in live_samp.columns:
+            if hasattr(live_samp[column], 'cat'):
+                hot = pd.get_dummies(live_samp[column], prefix=column)
+                cat_dummies.append(hot)
+                drop_cols.append(column)
+
+        live_samp = live_samp.drop(drop_cols, axis=1)            
+
+        one_hot_enc = pd.concat(cat_dummies, axis=1)
+
+        model_samp = pd.concat([live_samp, one_hot_enc], axis=1)
+        feat_cols = model_samp.columns.drop(['AVG(AvgTone)'])
+        
+        pared_cache[h] = (model_samp, feat_cols)
+    else:
+        model_samp, feat_cols = naive_cache[h]        
+
+    train, test = train_test_split(model_samp, test_size=0.25, random_state=42)
+    
+    Y = train['AVG(AvgTone)']
+    X = train[feat_cols]
+    model.fit(X, Y)
+
+    train_score = model.score(X, Y)
+    Y_test = test['AVG(AvgTone)']
+    X_test = test[feat_cols]
+    test_score = model.score(X_test, Y_test)
+    
+    return train_score, test_score, model, model_samp, train, test
+
+def train_naive_URARE(sample, model, cut_off=.005):
+    live_samp = sample.copy()
+    
+    cat_dummies = []
+    drop_cols = []
+    for column in live_samp.columns:
+        if hasattr(live_samp[column], 'cat'):
+            unify_rare_cats(live_samp, column, cut_off)
+            hot = pd.get_dummies(live_samp[column], prefix=column)
+            cat_dummies.append(hot)
+            drop_cols.append(column)
+            
+    live_samp.drop(drop_cols, axis=1)            
+    
+    one_hot_enc = pd.concat(cat_dummies, axis=1)
+    
+    model_samp = pd.concat([live_samp, one_hot_enc])
+    feat_cols = model_samp.columns.drop(['AVG(AvgTone)'])
+    
+    train, test = train_test_split(live_samp, test_size=0.25, random_state=42)
+    
+    Y = train['AVG(AvgTone)']
+    X = train[feat_cols]
+    model.fit(X, Y)
+    
+    return train_score, test_score, model, model_samp, train, test
+
+def train_pared_URARE(sample, model, cut_off=.005):
+    live_samp = sample.copy()
+    live_samp = pare(live_samp)
+    
+    cat_dummies = []
+    drop_cols = []
+    for column in live_samp.columns:
+        if hasattr(live_samp[column], 'cat'):
+            unify_rare_cats(live_samp, column, cut_off)
+            hot = pd.get_dummies(live_samp[column], prefix=column)
+            cat_dummies.append(hot)
+            drop_cols.append(column)
+            
+    live_samp.drop(drop_cols, axis=1)            
+    
+    one_hot_enc = pd.concat(cat_dummies, axis=1)
+    
+    model_samp = pd.concat([live_samp, one_hot_enc])
+    feat_cols = model_samp.columns.drop(['AVG(AvgTone)'])
+    
+    train, test = train_test_split(live_samp, test_size=0.25, random_state=42)
+    
+    Y = train['AVG(AvgTone)']
+    X = train[feat_cols]
+    model.fit(X, Y)
+    
+    return train_score, test_score, model, model_samp, train, test
+
+def train_naive_UWEAK(sample, model, pvalue=0.0001, mag=1, count_penalty=10):
+    live_samp = sample.copy()
+    
+    cat_dummies = []
+    drop_cols = []
+    for column in live_samp.columns:
+        if hasattr(live_samp[column], 'cat'):
+            unify_weak_cats(live_samp, column, pvalue, mag, count_penalty)
+            hot = pd.get_dummies(live_samp[column], prefix=column)
+            cat_dummies.append(hot)
+            drop_cols.append(column)
+            
+    live_samp.drop(drop_cols, axis=1)            
+    
+    one_hot_enc = pd.concat(cat_dummies, axis=1)
+    
+    model_samp = pd.concat([live_samp, one_hot_enc])
+    feat_cols = model_samp.columns.drop(['AVG(AvgTone)'])
+    
+    train, test = train_test_split(live_samp, test_size=0.25, random_state=42)
+    
+    Y = train['AVG(AvgTone)']
+    X = train[feat_cols]
+    model.fit(X, Y)
+    
+    return train_score, test_score, model, model_samp, train, test
+
+def train_pared_UWEAK(sample, model, pvalue=0.0001, mag=1, count_penalty=10):
+    live_samp = sample.copy()
+    live_samp = pare(live_samp)
+        
+    cat_dummies = []
+    drop_cols = []
+    for column in live_samp.columns:
+        if hasattr(live_samp[column], 'cat'):
+            unify_weak_cats(live_samp, column, pvalue, mag, count_penalty)
+            hot = pd.get_dummies(live_samp[column], prefix=column)
+            cat_dummies.append(hot)
+            drop_cols.append(column)
+            
+    live_samp.drop(drop_cols, axis=1)            
+    
+    one_hot_enc = pd.concat(cat_dummies, axis=1)
+    
+    model_samp = pd.concat([live_samp, one_hot_enc])
+    feat_cols = model_samp.columns.drop(['AVG(AvgTone)'])
+    
+    train, test = train_test_split(live_samp, test_size=0.25, random_state=42)
+    
+    Y = train['AVG(AvgTone)']
+    X = train[feat_cols]
+    model.fit(X, Y)
+    
+    return train_score, test_score, model, model_samp, train, test
+
+# can be used with pared and naive
+def ICM_INT_sample(sample, country):
+    cntry_sample = sample[sample['Actor1CountryCode'] == country].copy()
+    cntry_sample['InternalEvent?'] = (cntry_sample['Actor2CountryCode'] == country).astype(int)
+    cntry_sample = cntry_sample.drop(['Actor1CountryCode', 'Actor2CountryCode'], axis=1)
+    return cntry_sample
+
+# can be used with pared and naive
+def ICM_SPEC_sample(sample, country):
+    cntry_sample = sample[sample['Actor1CountryCode'] == country].copy()
+    cntry_sample = cntry_sample.drop(['Actor1CountryCode'], axis=1)
+    return cntry_sample   
+
+# can only be used with naive
+def ICM_INT_GINT_sample(sample, country):
+    cntry_sample = sample[sample['Actor1CountryCode'] == country].copy()
+    cntry_sample['InternalEvent?'] = (cntry_sample['Actor2CountryCode'] != country).astype(int)
+    cntry_sample['Actor1AtHome?'] = (cntry_sample['Actor1Geo_CountryCode'] == country).astype(int)
+    cntry_sample['Actor2AtActor1Home?'] = (cntry_sample['Actor2Geo_CountryCode'] == country).astype(int)
+    cntry_sample = cntry_sample.drop(['Actor1CountryCode', 'Actor2CountryCode',
+                                     'Actor1Geo_CountryCode', 'Actor2Geo_CountryCode']
+                                     , axis=1)
+    return cntry_sample    
+
+# can only be used with naive
+def ICM_INT_GSPEC_sample(sample, country):
+    cntry_sample = sample[sample['Actor1CountryCode'] == country].copy()
+    cntry_sample['InternalEvent?'] = (cntry_sample['Actor2CountryCode'] != country).astype(int)
+    cntry_sample['Actor2AtActor1Home?'] = (cntry_sample['Actor2Geo_CountryCode'] == country).astype(int)
+    cntry_sample = cntry_sample.drop(['Actor1CountryCode', 'Actor2CountryCode', 
+                                      'Actor2Geo_CountryCode']
+                                     , axis=1)
+    return cntry_sample    
+
+# can only be used with naive
+def ICM_FULL_sample(sample, country):
+    cntry_sample = sample[sample['Actor1CountryCode'] == country].copy()
+    cntry_sample = cntry_sample.drop(['Actor1CountryCode'], axis=1)
+    return cntry_sample    
+
+# can only be used with naive
+def ICM_PERSPEC_sample(sample, country):
+    cntry_sample = sample[sample['Actor1CountryCode'] == country].copy()
+    cntry_sample['Actor1AtHome?'] = (cntry_sample['Actor1Geo_CountryCode'] == country).astype(int)
+    cntry_sample = cntry_sample.drop(['Actor1CountryCode', 'Actor1Geo_CountryCode']
+                                     , axis=1)
+    return cntry_sample
+
+def country_info(sample, column, pvalue, mag, count_penalty):
+    tones = sample['AVG(AvgTone)']
+    cntry = sample[column]
+
+    one_hot = pd.get_dummies(cntry)
+    one_hot_tone = pd.concat([tones, one_hot], axis=1)
+
+    avg_avgtone_mean = one_hot_tone['AVG(AvgTone)'].mean()
+
+    country_info = []
+    for column in one_hot.columns:
+        temp = one_hot_tone[[column, 'AVG(AvgTone)']]
+        country = temp[temp[column] == 1]
+        columns_mean = None
+        if len(country) < count_penalty: 
+            column_means = [0, 0]
+            country_info.append((column, 
+                                 0, 
+                                 0, 
+                                 (temp[column].sum()),
+                                 1))
+        else:
+            column_means = temp.groupby(column).mean()['AVG(AvgTone)']
+            country_info.append((column, 
+                                 column_means[0] - column_means[1], 
+                                 np.absolute(column_means[0] - column_means[1]), 
+                                 (temp[column].sum()),
+                                 ttest_1samp(country, avg_avgtone_mean).pvalue[1]))
+
+    cntry_spec = pd.DataFrame(country_info, columns=["Country", "AvgTone_diff", "AvgTone_mag", "Num", "p-value"])
+    
+    return cntry_spec
+    
 GDELT_columns = ["GLOBALEVENTID","SQLDATE","MonthYear","Year","FractionDate","Actor1Code","Actor1Name","Actor1CountryCode","Actor1KnownGroupCode","Actor1EthnicCode","Actor1Religion1Code","Actor1Religion2Code","Actor1Type1Code","Actor1Type2Code","Actor1Type3Code","Actor2Code","Actor2Name","Actor2CountryCode","Actor2KnownGroupCode","Actor2EthnicCode","Actor2Religion1Code","Actor2Religion2Code","Actor2Type1Code","Actor2Type2Code","Actor2Type3Code","IsRootEvent","EventCode","EventBaseCode","EventRootCode","QuadClass","GoldsteinScale","NumMentions","NumSources","NumArticles","AvgTone","Actor1Geo_Type","Actor1Geo_FullName","Actor1Geo_CountryCode","Actor1Geo_ADM1Code","Actor1Geo_Lat","Actor1Geo_Long","Actor1Geo_FeatureID","Actor2Geo_Type","Actor2Geo_FullName","Actor2Geo_CountryCode","Actor2Geo_ADM1Code","Actor2Geo_Lat","Actor2Geo_Long","Actor2Geo_FeatureID","ActionGeo_Type","ActionGeo_FullName","ActionGeo_CountryCode","ActionGeo_ADM1Code","ActionGeo_Lat","ActionGeo_Long","ActionGeo_FeatureID","DATEADDED","SOURCEURL"]
 usecols = ['GLOBALEVENTID', 'SQLDATE', 'Actor1Code', 'Actor1Name', 'Actor1CountryCode', 'Actor1KnownGroupCode', 'Actor1EthnicCode', 'Actor1Religion1Code', 'Actor1Religion2Code', 'Actor1Type1Code', 'Actor1Type2Code', 'Actor1Type3Code', 'Actor2Code', 'Actor2Name', 'Actor2CountryCode', 'Actor2KnownGroupCode', 'Actor2EthnicCode', 'Actor2Religion1Code', 'Actor2Religion2Code', 'Actor2Type1Code', 'Actor2Type2Code', 'Actor2Type3Code', 'IsRootEvent', 'EventCode', 'EventBaseCode', 'EventRootCode', 'QuadClass', 'GoldsteinScale', 'NumMentions', 'NumSources', 'NumArticles', 'AvgTone', 'Actor1Geo_Type', 'Actor1Geo_FullName', 'Actor1Geo_CountryCode', 'Actor1Geo_ADM1Code', 'Actor1Geo_Lat', 'Actor1Geo_Long', 'Actor1Geo_FeatureID', 'Actor2Geo_Type', 'Actor2Geo_FullName', 'Actor2Geo_CountryCode', 'Actor2Geo_ADM1Code', 'Actor2Geo_Lat', 'Actor2Geo_Long', 'Actor2Geo_FeatureID', 'ActionGeo_Type', 'ActionGeo_FullName', 'ActionGeo_CountryCode', 'ActionGeo_ADM1Code', 'ActionGeo_Lat', 'ActionGeo_Long', 'ActionGeo_FeatureID']
 dtype_dict = {'GLOBALEVENTID': 'uint32', 
