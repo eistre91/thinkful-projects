@@ -170,6 +170,8 @@ def train_pared(sample, model):
         drop_cols = []
         for column in live_samp.columns:
             if hasattr(live_samp[column], 'cat'):
+                live_samp[column] = live_samp[column].cat.add_categories(['UNK'])
+                live_samp[column].fillna('UNK')
                 hot = pd.get_dummies(live_samp[column], prefix=column)
                 cat_dummies.append(hot)
                 drop_cols.append(column)
@@ -183,7 +185,7 @@ def train_pared(sample, model):
         
         pared_cache[h] = (model_samp, feat_cols)
     else:
-        model_samp, feat_cols = naive_cache[h]        
+        model_samp, feat_cols = pared_cache[h]        
 
     train, test = train_test_split(model_samp, test_size=0.25, random_state=42)
     

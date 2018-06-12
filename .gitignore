@@ -108,3 +108,5 @@ ENV/
 *.pkl
 *.db-journal
 *.xls
+*.bz2
+*.gz
