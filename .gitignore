@@ -110,3 +110,4 @@ ENV/
 *.xls
 *.bz2
 *.gz
+*.json
