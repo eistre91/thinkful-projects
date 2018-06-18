@@ -111,6 +111,16 @@ def init_sample(gdelt, frac):
                                             .cat.remove_unused_categories()
     return gdelt_sample.copy()    
 
+def init_NNM_sample(gdelt, frac): 
+    gdelt_sample = gdelt.sample(frac=frac) \
+                        .drop(['SQLDATE'], axis=1)
+    gdelt_sample = gdelt_sample.drop(['AVG(NumMentions)'], axis=1) 
+    for category_col in gdelt_sample.columns:
+        if hasattr(gdelt_sample[category_col], 'cat'):
+            gdelt_sample[category_col] = gdelt_sample[category_col] \
+                                            .cat.remove_unused_categories()
+    return gdelt_sample.copy() 
+
 def pare(sample):
     return sample.drop(['Actor1Geo_CountryCode', 'Actor2Geo_CountryCode'], axis=1)
 
@@ -321,6 +331,19 @@ def ICM_INT_sample(sample, country):
 def ICM_SPEC_sample(sample, country):
     cntry_sample = sample[sample['Actor1CountryCode'] == country].copy()
     cntry_sample = cntry_sample.drop(['Actor1CountryCode'], axis=1)
+    return cntry_sample   
+
+# can be used with pared and naive
+def ICM_INT_NNM_sample(sample, country):
+    cntry_sample = sample[sample['Actor1CountryCode'] == country].copy()
+    cntry_sample['InternalEvent?'] = (cntry_sample['Actor2CountryCode'] == country).astype(int)
+    cntry_sample = cntry_sample.drop(['Actor1CountryCode', 'Actor2CountryCode', 'norm_NumMentions'], axis=1)
+    return cntry_sample
+
+# can be used with pared and naive
+def ICM_SPEC_NNM_sample(sample, country):
+    cntry_sample = sample[sample['Actor1CountryCode'] == country].copy()
+    cntry_sample = cntry_sample.drop(['Actor1CountryCode', 'norm_NumMentions'], axis=1)
     return cntry_sample   
 
 # can only be used with naive
