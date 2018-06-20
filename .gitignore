@@ -111,3 +111,4 @@ ENV/
 *.bz2
 *.gz
 *.json
+*.data
