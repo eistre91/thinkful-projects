@@ -112,3 +112,4 @@ ENV/
 *.gz
 *.json
 *.data
+*.jpg
